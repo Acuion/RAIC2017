@@ -107,7 +107,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					move.setAction(ActionType::MOVE);
 					move.setX(cos(moveAngle) * 75);
 					move.setY(sin(moveAngle) * 75);
-					if (fabs(move.getX())< 1e-6)
+					if (fabs(move.getX()) < 1e-6)
 						move.setX(0);
 					if (fabs(move.getY()) < 1e-6)
 						move.setY(0);
@@ -120,6 +120,102 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		}
 		intersectionHandler();
 	}
+
+	// 2.0 - radius
+	// dist btw units = 3
+	const bool horisontalFormation = mfb.getFormation()[0].second == mfb.getFormation()[1].second;
+	const int formationIndex = (horisontalFormation ? mfb.getFormation()[0].second : mfb.getFormation()[0].first);
+
+	mDelayedFunctions.push({nextTurnAt, [=](Move& move, const World& world)
+	{
+		const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
+		const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
+		const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
+
+		vector<double> targetShifts;
+		for (int i = 0; i < 10; ++i)
+			targetShifts.push_back(6 * i);
+
+		if (horisontalFormation) // * * *
+		{//todo
+			switch (formationIndex)
+			{
+			case 0:
+				for (int j = 9; j >= 0; --j)
+				{
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setTop(tankCenter.second + (j - 4) * 3 - 2);
+						move.setBottom(tankCenter.second + (j - 4) * 3 + 2);
+						move.setLeft(tankCenter.first - 6 * 3);
+						move.setRight(tankCenter.first + 6 * 3);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] - 25.5);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+				}
+				break;
+			case 1:
+				for (int j = 9; j >= 0; --j)
+				{
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setTop(tankCenter.second + (j - 4) * 3 - 2);
+						move.setBottom(tankCenter.second + (j - 4) * 3 + 2);
+						move.setLeft(tankCenter.first - 6 * 3);
+						move.setRight(tankCenter.first + 6 * 3);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(-targetShifts[9 - j]);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+				}
+				break;
+			case 2:
+				for (int j = 0; j <= 9; ++j)
+				{
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setTop(tankCenter.second + (j - 4) * 3 - 2);
+						move.setBottom(tankCenter.second + (j - 4) * 3 + 2);
+						move.setLeft(tankCenter.first - 6 * 3);
+						move.setRight(tankCenter.first + 6 * 3);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j]);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+				}
+				break;
+			default:
+				throw;
+			}
+		}
+		else
+		{
+			switch (formationIndex)
+			{
+			case 0:
+				break;
+			case 1:
+				break;
+			case 2:
+				break;
+			default:
+				throw;
+			}
+		}
+	} });
 
 	// TANK IFV ARRV
 }
