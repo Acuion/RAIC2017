@@ -81,6 +81,9 @@
     <ClCompile Include="model\VehicleUpdate.cpp">
       <Filter>Source Files\model</Filter>
     </ClCompile>
+    <ClCompile Include="MyFormationBruteforcer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyStrategy.h">
@@ -157,6 +160,9 @@
     </ClInclude>
     <ClInclude Include="model\WeatherType.h">
       <Filter>Header Files\model</Filter>
+    </ClInclude>
+    <ClInclude Include="MyFormationBruteforcer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

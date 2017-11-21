@@ -14,7 +14,7 @@ void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
 xypoint MyStrategy::getCenterOfGroup(VehicleType vt)
 {
 	int x = 0, y = 0, count = 0;
-	for (auto& q : ourVehicles)
+	for (auto& q : mOurVehicles)
 		if (q.second.getType() == vt)
 		{
 			x += q.second.getX();
@@ -30,9 +30,9 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	for (auto& x : world.getNewVehicles())
 	{
 		if (x.getPlayerId() != me.getId())
-			enemyVehicles[x.getId()] = x;
+			mEnemyVehicles[x.getId()] = x;
 		else
-			ourVehicles[x.getId()] = x;
+			mOurVehicles[x.getId()] = x;
 	}
 
 	xypoint tankCenter, helicopterCenter, ifvCenter, fighterCenter, arrvCenter;
@@ -72,16 +72,16 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	if (world.getTickIndex() == 0)
 		firstTickActions(me, world, game, move);
 
-	while (delayedFunctions.size() && delayedFunctions.top().first <= world.getTickIndex())
+	while (mDelayedFunctions.size() && mDelayedFunctions.top().first <= world.getTickIndex())
 	{
-		executionQueue.push_back(delayedFunctions.top().second);
-		delayedFunctions.pop();
+		mExecutionQueue.push_back(mDelayedFunctions.top().second);
+		mDelayedFunctions.pop();
 	}
 
-	if (executionQueue.size() && world.getTickIndex() % 5 == 0)
+	if (mExecutionQueue.size() && world.getTickIndex() % 5 == 0)
 	{
-		executionQueue.front()(move, world);
-		executionQueue.pop_front();
+		mExecutionQueue.front()(move, world);
+		mExecutionQueue.pop_front();
 	}
 
 	// TANK && FIGHTER

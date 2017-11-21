@@ -126,6 +126,7 @@
     <ClCompile Include="csimplesocket\HTTPActiveSocket.cpp" />
     <ClCompile Include="csimplesocket\PassiveSocket.cpp" />
     <ClCompile Include="csimplesocket\SimpleSocket.cpp" />
+    <ClCompile Include="MyFormationBruteforcer.cpp" />
     <ClCompile Include="model\CircularUnit.cpp" />
     <ClCompile Include="model\Facility.cpp" />
     <ClCompile Include="model\Game.cpp" />
@@ -148,6 +149,7 @@
     <ClInclude Include="csimplesocket\PassiveSocket.h" />
     <ClInclude Include="csimplesocket\SimpleSocket.h" />
     <ClInclude Include="csimplesocket\StatTimer.h" />
+    <ClInclude Include="MyFormationBruteforcer.h" />
     <ClInclude Include="model\ActionType.h" />
     <ClInclude Include="model\CircularUnit.h" />
     <ClInclude Include="model\Facility.h" />
