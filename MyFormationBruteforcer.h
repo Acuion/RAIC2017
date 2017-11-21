@@ -25,6 +25,7 @@ public:
 private:
 	void buildPathToPoints(xypoint targetTankCell, xypoint targetIfvCell, xypoint targetArrvCell);
 
+	bool mPathIsEmpty;
 	vector<FormationStep> mCurrentFormationPath;
 	vector<xypoint> mFinalFormation;
 

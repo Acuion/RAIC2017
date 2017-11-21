@@ -65,40 +65,64 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	mfb.buildPathToFormation();
 
 	int nextTurnAt = 0;
-	for (auto& turn : mfb.getFormationPath())
+	auto path = mfb.getFormationPath();
+	if (path.size())
 	{
-		double moveAngle = atan2(turn.mMoveTo.second - turn.mMoveFrom.second, turn.mMoveTo.first - turn.mMoveFrom.first);
-		mDelayedFunctions.push({ nextTurnAt, [=](Move& move, const World& world)
+		vector<FormationStep> nowRunning;
+
+		const auto intersectionHandler = [&]
 		{
-			selectVehicles(turn.mVt, move);
-			mExecutionQueue.push_front([=](Move& move, const World& world)
+			bool tankMove = false;
+			for (auto& x : nowRunning)
+				if (x.mVt == model::VehicleType::TANK)
+					tankMove = true;
+			if (tankMove)
+				nextTurnAt += 75 / 0.3 + 20;
+			else
+				nextTurnAt += 75 / 0.4 + 20;
+			nowRunning.clear();
+		};
+
+		for (int i = 0; i < path.size(); ++i)
+		{
+			auto& turn = path[i];
+
+			bool intersects = false;
+
+			for (auto& x : nowRunning)
+				if (x.mMoveFrom == turn.mMoveFrom || x.mMoveFrom == turn.mMoveTo || x.mMoveTo == turn.mMoveTo || x.mMoveTo == turn.mMoveFrom)
+					intersects = true;
+
+			if (intersects)
 			{
-				move.setAction(ActionType::MOVE);
-				move.setX(cos(moveAngle) * 75);
-				move.setY(sin(moveAngle) * 75);
-			});
-			swap(mExecutionQueue[0], mExecutionQueue[1]);
-		} });
-		switch (turn.mVt)
-		{
-		case VehicleType::ARRV:
-			nextTurnAt += 75 / 0.4;
-			break;
-		case VehicleType::IFV:
-			nextTurnAt += 75 / 0.4;
-			break;
-		case VehicleType::TANK:
-			nextTurnAt += 75 / 0.3;
-			break;
-		default:
-			throw;
+				intersectionHandler();
+			}
+
+			double moveAngle = atan2(turn.mMoveTo.second - turn.mMoveFrom.second, turn.mMoveTo.first - turn.mMoveFrom.first);
+			mDelayedFunctions.push({ nextTurnAt, [=](Move& move, const World& world)
+			{
+				selectVehicles(turn.mVt, move);
+				mExecutionQueue.push_front([=](Move& move, const World& world)
+				{
+					move.setAction(ActionType::MOVE);
+					move.setX(cos(moveAngle) * 75);
+					move.setY(sin(moveAngle) * 75);
+					if (fabs(move.getX())< 1e-6)
+						move.setX(0);
+					if (fabs(move.getY()) < 1e-6)
+						move.setY(0);
+					cout << move.getX() << ":" << move.getY() << endl;
+				});
+				swap(mExecutionQueue[0], mExecutionQueue[1]);
+			} });
+
+			nextTurnAt += 5 + 5; // selection & move commands overhead
+			nowRunning.push_back(turn);
 		}
+		intersectionHandler();
 	}
 
-	// 2 * 3 * 9^4
-	// столбец или строка будет являтся местом упаковки
-	// какая из строк
-	// перебираем кто куда едет
+	// TANK IFV ARRV
 }
 
 void MyStrategy::move(const Player& me, const World& world, const Game& game, Move& move)

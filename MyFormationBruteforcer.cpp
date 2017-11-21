@@ -41,7 +41,8 @@ vector<xypoint> MyFormationBruteforcer::getFormation() const
 }
 
 MyFormationBruteforcer::MyFormationBruteforcer(const xypoint tankStartCell, const xypoint ifvStartCell, const xypoint arrvStartCell)
-	: mTankStartCell(tankStartCell)
+	: mPathIsEmpty(true)
+	, mTankStartCell(tankStartCell)
 	, mIfvStartCell(ifvStartCell)
 	, mArrvStartCell(arrvStartCell)
 {
@@ -57,8 +58,8 @@ void MyFormationBruteforcer::buildPathToPoints(xypoint targetTankCell, xypoint t
 	queue<position> q;
 	map<position, position> parent;
 
-	position start = { mTankStartCell, mIfvStartCell, mArrvStartCell };
-	position finish = { targetTankCell, targetIfvCell, targetArrvCell };
+	const position start = { mTankStartCell, mIfvStartCell, mArrvStartCell };
+	const position finish = { targetTankCell, targetIfvCell, targetArrvCell };
 
 	const int dr[4] = {0,0,1,-1};
 	const int dc[4] = {1,-1,0,0};
@@ -100,8 +101,9 @@ void MyFormationBruteforcer::buildPathToPoints(xypoint targetTankCell, xypoint t
 				}
 			}
 
-			if (!mCurrentFormationPath.size() || mCurrentFormationPath.size() > candidate.size())
+			if (mPathIsEmpty || mCurrentFormationPath.size() > candidate.size())
 			{
+				mPathIsEmpty = false;
 				mCurrentFormationPath = candidate;
 				mFinalFormation = finish;
 			}
