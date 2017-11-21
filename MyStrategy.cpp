@@ -64,16 +64,31 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	auto mfb = MyFormationBruteforcer(tankCell, ifvCell, arrvCell);
 	mfb.buildPathToFormation();
 
-	int turnNum = 0;
+	int nextTurnAt = 0;
 	for (auto& turn : mfb.getFormationPath())
 	{
+		double moveAngle = atan2(turn.mMoveTo.second - turn.mMoveFrom.second, turn.mMoveTo.first - turn.mMoveFrom.first);
+		mDelayedFunctions.push({ nextTurnAt, [=](Move& move, const World& world)
+		{
+			selectVehicles(turn.mVt, move);
+			mExecutionQueue.push_front([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(cos(moveAngle) * 75);
+				move.setY(sin(moveAngle) * 75);
+			});
+			swap(mExecutionQueue[0], mExecutionQueue[1]);
+		} });
 		switch (turn.mVt)
 		{
 		case VehicleType::ARRV:
+			nextTurnAt += 75 / 0.4;
 			break;
 		case VehicleType::IFV:
+			nextTurnAt += 75 / 0.4;
 			break;
 		case VehicleType::TANK:
+			nextTurnAt += 75 / 0.3;
 			break;
 		default:
 			throw;

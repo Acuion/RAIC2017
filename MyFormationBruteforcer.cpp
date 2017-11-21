@@ -88,15 +88,15 @@ void MyFormationBruteforcer::buildPathToPoints(xypoint targetTankCell, xypoint t
 			{
 				if (moves[i][0] != moves[i - 1][0])
 				{
-					candidate.push_back({model::VehicleType::TANK, moves[i][0] });
+					candidate.push_back({model::VehicleType::TANK, moves[i - 1][0], moves[i][0] });
 				}
 				if (moves[i][1] != moves[i - 1][1])
 				{
-					candidate.push_back({ model::VehicleType::IFV, moves[i][1] });
+					candidate.push_back({ model::VehicleType::IFV, moves[i - 1][1], moves[i][1] });
 				}
 				if (moves[i][2] != moves[i - 1][2])
 				{
-					candidate.push_back({ model::VehicleType::ARRV, moves[i][2] });
+					candidate.push_back({ model::VehicleType::ARRV, moves[i - 1][2], moves[i][2] });
 				}
 			}
 

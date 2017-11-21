@@ -10,7 +10,7 @@ using xypoint = pair<int, int>;
 struct FormationStep
 {
 	model::VehicleType mVt;
-	xypoint mMoveTo;
+	xypoint mMoveFrom, mMoveTo;
 };
 
 class MyFormationBruteforcer
