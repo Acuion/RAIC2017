@@ -77,9 +77,9 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				if (x.mVt == model::VehicleType::TANK)
 					tankMove = true;
 			if (tankMove)
-				nextTurnAt += 75 / 0.3 + 20;
+				nextTurnAt += 75 / 0.3 + 60;
 			else
-				nextTurnAt += 75 / 0.4 + 20;
+				nextTurnAt += 75 / 0.4 + 60;
 			nowRunning.clear();
 		};
 
@@ -111,7 +111,6 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 						move.setX(0);
 					if (fabs(move.getY()) < 1e-6)
 						move.setY(0);
-					cout << move.getX() << ":" << move.getY() << endl;
 				});
 				swap(mExecutionQueue[0], mExecutionQueue[1]);
 			} });
