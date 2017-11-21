@@ -1,4 +1,5 @@
 #include "MyStrategy.h"
+#include "MyFormationBruteforcer.h"
 
 #define PI 3.14159265358979323846
 #define _USE_MATH_DEFINES
@@ -22,7 +23,7 @@ xypoint MyStrategy::getCenterOfGroup(VehicleType vt)
 			count++;
 		}
 
-	return { x / count, y / count };
+	return {x / count, y / count};
 }
 
 void MyStrategy::firstTickActions(const Player& me, const World& world, const Game& game, Move& move)
@@ -35,12 +36,11 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			mOurVehicles[x.getId()] = x;
 	}
 
-	xypoint tankCenter, helicopterCenter, ifvCenter, fighterCenter, arrvCenter;
-	tankCenter = getCenterOfGroup(VehicleType::TANK);
-	helicopterCenter = getCenterOfGroup(VehicleType::HELICOPTER);
-	ifvCenter = getCenterOfGroup(VehicleType::IFV);
-	fighterCenter = getCenterOfGroup(VehicleType::FIGHTER);
-	arrvCenter = getCenterOfGroup(VehicleType::ARRV);
+	const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
+	const xypoint helicopter_center = getCenterOfGroup(VehicleType::HELICOPTER);
+	const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
+	const xypoint fighterCenter = getCenterOfGroup(VehicleType::FIGHTER);
+	const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
 
 	//cout << tankCenter.first << " " << tankCenter.second << endl;
 	//cout << helicopterCenter.first << " " << helicopterCenter.second << endl;
@@ -52,14 +52,33 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 	tankCell.first = round((tankCenter.first - 45) / 75.0);
 	tankCell.second = round((tankCenter.second - 45) / 75.0);
-	helicopterCell.first = round((helicopterCenter.first - 45) / 75.0);
-	helicopterCell.second = round((helicopterCenter.second - 45) / 75.0);
+	helicopterCell.first = round((helicopter_center.first - 45) / 75.0);
+	helicopterCell.second = round((helicopter_center.second - 45) / 75.0);
 	ifvCell.first = round((ifvCenter.first - 45) / 75.0);
 	ifvCell.second = round((ifvCenter.second - 45) / 75.0);
 	fighterCell.first = round((fighterCenter.first - 45) / 75.0);
 	fighterCell.second = round((fighterCenter.second - 45) / 75.0);
 	arrvCell.first = round((arrvCenter.first - 45) / 75.0);
 	arrvCell.second = round((arrvCenter.second - 45) / 75.0);
+
+	auto mfb = MyFormationBruteforcer(tankCell, ifvCell, arrvCell);
+	mfb.buildPathToFormation();
+
+	int turnNum = 0;
+	for (auto& turn : mfb.getFormationPath())
+	{
+		switch (turn.mVt)
+		{
+		case VehicleType::ARRV:
+			break;
+		case VehicleType::IFV:
+			break;
+		case VehicleType::TANK:
+			break;
+		default:
+			throw;
+		}
+	}
 
 	// 2 * 3 * 9^4
 	// столбец или строка будет €вл€тс€ местом упаковки

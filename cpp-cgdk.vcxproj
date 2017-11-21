@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -21,18 +21,18 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2CE92CD0-B49B-4C6D-B8EE-F1EC4D0A9398}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -126,7 +126,6 @@
     <ClCompile Include="csimplesocket\HTTPActiveSocket.cpp" />
     <ClCompile Include="csimplesocket\PassiveSocket.cpp" />
     <ClCompile Include="csimplesocket\SimpleSocket.cpp" />
-    <ClCompile Include="MyFormationBruteforcer.cpp" />
     <ClCompile Include="model\CircularUnit.cpp" />
     <ClCompile Include="model\Facility.cpp" />
     <ClCompile Include="model\Game.cpp" />
@@ -137,6 +136,7 @@
     <ClCompile Include="model\Vehicle.cpp" />
     <ClCompile Include="model\VehicleUpdate.cpp" />
     <ClCompile Include="model\World.cpp" />
+    <ClCompile Include="MyFormationBruteforcer.cpp" />
     <ClCompile Include="MyStrategy.cpp" />
     <ClCompile Include="RemoteProcessClient.cpp" />
     <ClCompile Include="Runner.cpp" />
@@ -149,7 +149,6 @@
     <ClInclude Include="csimplesocket\PassiveSocket.h" />
     <ClInclude Include="csimplesocket\SimpleSocket.h" />
     <ClInclude Include="csimplesocket\StatTimer.h" />
-    <ClInclude Include="MyFormationBruteforcer.h" />
     <ClInclude Include="model\ActionType.h" />
     <ClInclude Include="model\CircularUnit.h" />
     <ClInclude Include="model\Facility.h" />
@@ -165,6 +164,7 @@
     <ClInclude Include="model\VehicleUpdate.h" />
     <ClInclude Include="model\WeatherType.h" />
     <ClInclude Include="model\World.h" />
+    <ClInclude Include="MyFormationBruteforcer.h" />
     <ClInclude Include="MyStrategy.h" />
     <ClInclude Include="RemoteProcessClient.h" />
     <ClInclude Include="Runner.h" />
