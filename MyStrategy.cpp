@@ -486,6 +486,16 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				move.setMaxSpeed(0.3);
 			});
 		} });
+		mDelayedFunctions.push({ nextTurnAt + 830, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setTop(0);
+			move.setLeft(0);
+			move.setBottom(1024);
+			move.setRight(1024);
+		} });
+		
+		mDelayedFunctions.push({ nextTurnAt + 930, mInfinityChase });
 	} });
 
 	// TANK IFV ARRV
@@ -532,4 +542,25 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 
 MyStrategy::MyStrategy()
 {
+	mInfinityChase = [=](Move& move, const World& world)
+	{
+		move.setAction(ActionType::MOVE);
+		xypoint nearest = { 512, 512 };
+		xypoint someOurCoords = { mOurVehicles.begin()->second.mX, mOurVehicles.begin()->second.mY };
+		double currDist = 1e9;
+		for (auto& x : mEnemyVehicles)
+		{
+			double dist = sqrt((x.second.mX - someOurCoords.first) * (x.second.mX - someOurCoords.first) +
+				(x.second.mY - someOurCoords.second) * (x.second.mY - someOurCoords.second));
+			if (dist < currDist)
+			{
+				nearest = { x.second.mX, x.second.mY };
+				currDist = dist;
+			}
+		}
+		move.setX(nearest.first - someOurCoords.first);
+		move.setY(nearest.second - someOurCoords.second);
+		move.setMaxSpeed(0.29);
+		mExecutionQueue.push_back(mInfinityChase);
+	};
 }

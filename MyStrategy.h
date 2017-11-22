@@ -41,6 +41,8 @@ private:
 	xypoint getCenterOfGroup(VehicleType vt);
 	void selectVehicles(VehicleType vt, Move& mv);
 
+	turnPrototype mInfinityChase;
+
 	deque<turnPrototype> mExecutionQueue;
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
 	priority_queue<pair<int, turnPrototype>,
