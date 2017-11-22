@@ -144,6 +144,35 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			move.setRight(center.first + (1 + 5 * 6));
 		};
 
+		const auto enqueueToFrontMoveVertOnJthShiftWithShift = [=](int j, int shift)
+		{
+			mExecutionQueue.push_front([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setY(targetShifts[j] + shift);
+			});
+			std::swap(mExecutionQueue[0], mExecutionQueue[1]);
+		};
+
+		const auto processMovesWithShiftsVert = [=](int j, int tankShift, int ifvShift, int arrvShift)
+		{
+			mExecutionQueue.push_back([=](Move& move, const World& world)
+			{
+				selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
+				enqueueToFrontMoveVertOnJthShiftWithShift(j, tankShift);
+			});
+			mExecutionQueue.push_back([=](Move& move, const World& world)
+			{
+				selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+				enqueueToFrontMoveVertOnJthShiftWithShift(j, ifvShift);
+			});
+			mExecutionQueue.push_back([=](Move& move, const World& world)
+			{
+				selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+				enqueueToFrontMoveVertOnJthShiftWithShift(j, arrvShift);
+			});
+		};
+
 		if (horisontalFormation) // * * *
 		{
 			switch (formationIndex)
@@ -153,36 +182,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					targetShifts.push_back(12 * i);
 				for (int j = 9; j >= 0; --j)
 				{
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j]);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] + 6);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] + 12);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
+					processMovesWithShiftsVert(j, 0, 6, 12);
 				}
 				break;
 			case 1:
@@ -192,107 +192,20 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					targetShifts.push_back(6 + 12 * i);
 				for (int j = 0; j < 5; ++j)
 				{
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j]);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] - 6);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] - 12);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
+					processMovesWithShiftsVert(j, 0, -6, -12);
 				}
 				for (int j = 9; j > 5; --j)
 				{
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(-targetShifts[j]);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] + 6);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] + 12);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
+					processMovesWithShiftsVert(j, 0, 6, 12);
 				}
 				break;
 			case 2:
 				for (int i = 0; i < 10; ++i)
 					targetShifts.push_back(-12 * i);
-				reverse(targetShifts.begin(), targetShifts.end());
+				std::reverse(targetShifts.begin(), targetShifts.end());
 				for (int j = 0; j <= 9; ++j)
 				{
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j]);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] - 6);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
-					mExecutionQueue.push_back([=](Move& move, const World& world)
-					{
-						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
-						mExecutionQueue.push_front([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] - 12);
-						});
-						swap(mExecutionQueue[0], mExecutionQueue[1]);
-					});
+					processMovesWithShiftsVert(j, 0, -6, -12);
 				}
 				break;
 			default:
