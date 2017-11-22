@@ -227,8 +227,8 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			pushToTheFrontOfQueue([=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::MOVE);
-				move.setX(theCenter.first - fighterCenter.first + 20);
-				move.setY(theCenter.second - fighterCenter.second + 20);
+				move.setX(theCenter.first - fighterCenter.first + 30);
+				move.setY(theCenter.second - fighterCenter.second + 30);
 				pushToTheFrontOfQueue([=](Move& move, const World& world)
 				{
 					selectVehicles(VehicleType::HELICOPTER, move);
@@ -356,20 +356,77 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					});
 				});
 			}});
-			mDelayedFunctions.push({ nextTurnAt + 580, [=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::CLEAR_AND_SELECT);
-				move.setRight(1024);
-				move.setBottom(1024);
-				pushToTheFrontOfQueue([=](Move& move, const World& world)
-				{
-					move.setAction(ActionType::ROTATE);
-					move.setX(theCenter.first);
-					move.setY(theCenter.second);
-					move.setAngle(PI / 4);
-				});
-			}});
 		}
+		mDelayedFunctions.push({ nextTurnAt + 580, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setRight(1024);
+			move.setBottom(1024);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::ROTATE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				move.setAngle(PI);
+			});
+		} });
+		//move to the center
+		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setLeft(theCenter.first);
+			move.setBottom(theCenter.second);
+			move.setTop(0);
+			move.setRight(1024);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(-100);
+				move.setY(100);
+			});
+		} });
+		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setRight(theCenter.first);
+			move.setBottom(theCenter.second);
+			move.setTop(0);
+			move.setLeft(0);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(100);
+				move.setY(100);
+			});
+		} });
+		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setRight(theCenter.first);
+			move.setTop(theCenter.second);
+			move.setBottom(1024);
+			move.setLeft(0);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(100);
+				move.setY(-100);
+			});
+		} });
+		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setLeft(theCenter.first);
+			move.setTop(theCenter.second);
+			move.setBottom(1024);
+			move.setRight(1024);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(-100);
+				move.setY(-100);
+			});
+		} });
 	} });
 
 	// TANK IFV ARRV
