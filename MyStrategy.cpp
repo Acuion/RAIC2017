@@ -220,6 +220,28 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			});
 		};
 
+		xypoint theCenter = { (tankCenter.first + ifvCenter.first + arrvCenter.first) / 3, (tankCenter.second + ifvCenter.second + arrvCenter.second) / 3 };
+		mExecutionQueue.push_back([=](Move& move, const World& world)
+		{
+			selectVehicles(VehicleType::FIGHTER, move);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(theCenter.first - fighterCenter.first + 20);
+				move.setY(theCenter.second - fighterCenter.second + 20);
+				pushToTheFrontOfQueue([=](Move& move, const World& world)
+				{
+					selectVehicles(VehicleType::HELICOPTER, move);
+					pushToTheFrontOfQueue([=](Move& move, const World& world)
+					{
+						move.setAction(ActionType::MOVE);
+						move.setX(theCenter.first - helicopterCenter.first - 20);
+						move.setY(theCenter.second - helicopterCenter.second - 20);
+					});
+				});
+			});
+		});
+
 		if (horisontalFormation) // * * *
 		{
 			switch (formationIndex)
@@ -307,27 +329,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			default:
 				throw;
 			}
-			xypoint theCenter = { (tankCenter.first + ifvCenter.first + arrvCenter.first) / 3, (tankCenter.second + ifvCenter.second + arrvCenter.second) / 3 };
-			mExecutionQueue.push_back([=](Move& move, const World& world)
-			{
-				selectVehicles(VehicleType::FIGHTER, move);
-				pushToTheFrontOfQueue([=](Move& move, const World& world)
-				{
-					move.setAction(ActionType::MOVE);
-					move.setX(theCenter.first - fighterCenter.first);
-					move.setY(theCenter.second - fighterCenter.second);
-					pushToTheFrontOfQueue([=](Move& move, const World& world)
-					{
-						selectVehicles(VehicleType::HELICOPTER, move);
-						pushToTheFrontOfQueue([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setX(theCenter.first - helicopterCenter.first);
-							move.setY(theCenter.second - helicopterCenter.second);
-						});
-					});
-				});
-			});
+
 			mDelayedFunctions.push({ nextTurnAt + 380, [=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::CLEAR_AND_SELECT);
@@ -353,8 +355,20 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 						});
 					});
 				});
-			} });
-			
+			}});
+			mDelayedFunctions.push({ nextTurnAt + 580, [=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::CLEAR_AND_SELECT);
+				move.setRight(1024);
+				move.setBottom(1024);
+				pushToTheFrontOfQueue([=](Move& move, const World& world)
+				{
+					move.setAction(ActionType::ROTATE);
+					move.setX(theCenter.first);
+					move.setY(theCenter.second);
+					move.setAngle(PI / 4);
+				});
+			}});
 		}
 	} });
 
