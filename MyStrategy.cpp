@@ -144,12 +144,32 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			move.setRight(center.first + (1 + 5 * 6));
 		};
 
+		const auto selectVerticallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setVehicleType(type);
+			move.setLeft(center.first + (j - 5) * 6);
+			move.setRight(center.first + (j - 4) * 6);
+			move.setTop(center.second - (1 + 5 * 6));
+			move.setBottom(center.second + (1 + 5 * 6));
+		};
+
 		const auto enqueueToFrontMoveVertOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
 		{
 			mExecutionQueue.push_front([=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::MOVE);
 				move.setY(targetShifts[j] + shift);
+			});
+			std::swap(mExecutionQueue[0], mExecutionQueue[1]);
+		};
+
+		const auto enqueueToFrontMoveHorisOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
+		{
+			mExecutionQueue.push_front([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(targetShifts[j] + shift);
 			});
 			std::swap(mExecutionQueue[0], mExecutionQueue[1]);
 		};
@@ -170,6 +190,25 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			{
 				selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
 				enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, arrvShift);
+			});
+		};
+
+		const auto processMovesWithShiftsHoris = [=](vector<double> targetShifts, int j, int tankShift, int ifvShift, int arrvShift)
+		{
+			mExecutionQueue.push_back([=](Move& move, const World& world)
+			{
+				selectVerticallyJthRow(move, tankCenter, j, VehicleType::TANK);
+				enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, tankShift);
+			});
+			mExecutionQueue.push_back([=](Move& move, const World& world)
+			{
+				selectVerticallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+				enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, ifvShift);
+			});
+			mExecutionQueue.push_back([=](Move& move, const World& world)
+			{
+				selectVerticallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+				enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, arrvShift);
 			});
 		};
 
@@ -194,7 +233,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					processMovesWithShiftsVert(targetShifts, j, 0, -6, -12);
 				}
-				for (int j = 9; j > 5; --j)
+				for (int j = 9; j >= 5; --j)
 				{
 					processMovesWithShiftsVert(targetShifts, j, 0, 6, 12);
 				}
@@ -217,10 +256,35 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			switch (formationIndex)
 			{
 			case 0:
+				for (int i = 0; i < 10; ++i)
+					targetShifts.push_back(12 * i);
+				for (int j = 9; j >= 0; --j)
+				{
+					processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
+				}
 				break;
 			case 1:
+				for (int i = 0; i < 5; ++i)
+					targetShifts.push_back(-6 - 12 * (4 - i));
+				for (int i = 0; i < 5; ++i)
+					targetShifts.push_back(6 + 12 * i);
+				for (int j = 0; j < 5; ++j)
+				{
+					processMovesWithShiftsHoris(targetShifts, j, 0, -6, -12);
+				}
+				for (int j = 9; j >= 5; --j)
+				{
+					processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
+				}
 				break;
 			case 2:
+				for (int i = 0; i < 10; ++i)
+					targetShifts.push_back(-12 * i);
+				std::reverse(targetShifts.begin(), targetShifts.end());
+				for (int j = 0; j <= 9; ++j)
+				{
+					processMovesWithShiftsHoris(targetShifts, j, 0, -6, -12);
+				}
 				break;
 			default:
 				throw;
