@@ -134,13 +134,14 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 		vector<double> targetShifts;
 
-		const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j)
+		const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
 		{
 			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setTop(tankCenter.second + (j - 5) * 6);
-			move.setBottom(tankCenter.second + (j - 4) * 6);
-			move.setLeft(tankCenter.first - (1 + 5 * 6));
-			move.setRight(tankCenter.first + (1 + 5 * 6));
+			move.setVehicleType(type);
+			move.setTop(center.second + (j - 5) * 6);
+			move.setBottom(center.second + (j - 4) * 6);
+			move.setLeft(center.first - (1 + 5 * 6));
+			move.setRight(center.first + (1 + 5 * 6));
 		};
 
 		if (horisontalFormation) // * * *
@@ -154,7 +155,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						selectHorisontallyJthRow(move, tankCenter, j);
+						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
@@ -162,22 +163,62 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 						});
 						swap(mExecutionQueue[0], mExecutionQueue[1]);
 					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] + 6);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] + 12);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
 				}
 				break;
 			case 1:
 				for (int i = 0; i < 5; ++i)
-					targetShifts.push_back(6 + 12 * i);
+					targetShifts.push_back(-6 - 12 * (4 - i));
 				for (int i = 0; i < 5; ++i)
-					targetShifts.push_back(-6 - 12 * i);
+					targetShifts.push_back(6 + 12 * i);
 				for (int j = 0; j < 5; ++j)
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						selectHorisontallyJthRow(move, tankCenter, j);
+						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
-							move.setY(-targetShifts[j]);
+							move.setY(targetShifts[j]);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] - 6);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] - 12);
 						});
 						swap(mExecutionQueue[0], mExecutionQueue[1]);
 					});
@@ -186,11 +227,31 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						selectHorisontallyJthRow(move, tankCenter, j);
+						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
 							move.setY(-targetShifts[j]);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] + 6);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] + 12);
 						});
 						swap(mExecutionQueue[0], mExecutionQueue[1]);
 					});
@@ -204,11 +265,31 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						selectHorisontallyJthRow(move, tankCenter, j);
+						selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
 							move.setY(targetShifts[j]);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] - 6);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(targetShifts[j] - 12);
 						});
 						swap(mExecutionQueue[0], mExecutionQueue[1]);
 					});
