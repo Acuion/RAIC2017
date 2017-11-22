@@ -131,8 +131,16 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
 		const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
 		const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
+		const xypoint fighterCenter = getCenterOfGroup(VehicleType::FIGHTER);
+		const xypoint helicopterCenter = getCenterOfGroup(VehicleType::HELICOPTER);
 
 		vector<double> targetShifts;
+
+		const auto pushToTheFrontOfQueue = [=](turnPrototype func)
+		{
+			mExecutionQueue.push_front(func);
+			std::swap(mExecutionQueue[0], mExecutionQueue[1]);
+		};
 
 		const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
 		{
@@ -225,6 +233,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				}
 				break;
 			case 1:
+			case 2:
 				for (int i = 0; i < 5; ++i)
 					targetShifts.push_back(-6 - 12 * (4 - i));
 				for (int i = 0; i < 5; ++i)
@@ -238,18 +247,35 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					processMovesWithShiftsVert(targetShifts, j, 0, 6, 12);
 				}
 				break;
-			case 2:
-				for (int i = 0; i < 10; ++i)
-					targetShifts.push_back(-12 * i);
-				std::reverse(targetShifts.begin(), targetShifts.end());
-				for (int j = 0; j <= 9; ++j)
-				{
-					processMovesWithShiftsVert(targetShifts, j, 0, -6, -12);
-				}
-				break;
 			default:
 				throw;
 			}
+			mDelayedFunctions.push({ nextTurnAt + 380, [=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::CLEAR_AND_SELECT);
+				move.setLeft(0);
+				move.setRight(45 + 50);
+				move.setTop(0);
+				move.setBottom(1024);
+				pushToTheFrontOfQueue([=](Move& move, const World& world)
+				{
+					move.setAction(ActionType::MOVE);
+					move.setX(75);
+					pushToTheFrontOfQueue([=](Move& move, const World& world)
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setLeft(160);
+						move.setRight(160 + 60);
+						move.setTop(0);
+						move.setBottom(1024);
+						pushToTheFrontOfQueue([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setX(-75);
+						});
+					});
+				});
+			} });
 		}
 		else
 		{
@@ -264,6 +290,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				}
 				break;
 			case 1:
+			case 2:
 				for (int i = 0; i < 5; ++i)
 					targetShifts.push_back(-6 - 12 * (4 - i));
 				for (int i = 0; i < 5; ++i)
@@ -277,18 +304,57 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
 				}
 				break;
-			case 2:
-				for (int i = 0; i < 10; ++i)
-					targetShifts.push_back(-12 * i);
-				std::reverse(targetShifts.begin(), targetShifts.end());
-				for (int j = 0; j <= 9; ++j)
-				{
-					processMovesWithShiftsHoris(targetShifts, j, 0, -6, -12);
-				}
-				break;
 			default:
 				throw;
 			}
+			xypoint theCenter = { (tankCenter.first + ifvCenter.first + arrvCenter.first) / 3, (tankCenter.second + ifvCenter.second + arrvCenter.second) / 3 };
+			mExecutionQueue.push_back([=](Move& move, const World& world)
+			{
+				selectVehicles(VehicleType::FIGHTER, move);
+				pushToTheFrontOfQueue([=](Move& move, const World& world)
+				{
+					move.setAction(ActionType::MOVE);
+					move.setX(theCenter.first - fighterCenter.first);
+					move.setY(theCenter.second - fighterCenter.second);
+					pushToTheFrontOfQueue([=](Move& move, const World& world)
+					{
+						selectVehicles(VehicleType::HELICOPTER, move);
+						pushToTheFrontOfQueue([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setX(theCenter.first - helicopterCenter.first);
+							move.setY(theCenter.second - helicopterCenter.second);
+						});
+					});
+				});
+			});
+			mDelayedFunctions.push({ nextTurnAt + 380, [=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::CLEAR_AND_SELECT);
+				move.setTop(0);
+				move.setBottom(45 + 50);
+				move.setLeft(0);
+				move.setRight(1024);
+				pushToTheFrontOfQueue([=](Move& move, const World& world)
+				{
+					move.setAction(ActionType::MOVE);
+					move.setY(75);
+					pushToTheFrontOfQueue([=](Move& move, const World& world)
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setTop(160);
+						move.setBottom(160 + 60);
+						move.setLeft(0);
+						move.setRight(1024);
+						pushToTheFrontOfQueue([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(-75);
+						});
+					});
+				});
+			} });
+			
 		}
 	} });
 
