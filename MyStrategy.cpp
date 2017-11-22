@@ -381,8 +381,9 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			pushToTheFrontOfQueue([=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::MOVE);
-				move.setX(-100);
-				move.setY(100);
+				move.setX(-64);
+				move.setY(64);
+				move.setMaxSpeed(0.3);
 			});
 		} });
 		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
@@ -395,8 +396,9 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			pushToTheFrontOfQueue([=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::MOVE);
-				move.setX(100);
-				move.setY(100);
+				move.setX(64);
+				move.setY(64);
+				move.setMaxSpeed(0.3);
 			});
 		} });
 		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
@@ -409,8 +411,9 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			pushToTheFrontOfQueue([=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::MOVE);
-				move.setX(100);
-				move.setY(-100);
+				move.setX(64);
+				move.setY(-64);
+				move.setMaxSpeed(0.3);
 			});
 		} });
 		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
@@ -423,8 +426,64 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			pushToTheFrontOfQueue([=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::MOVE);
-				move.setX(-100);
-				move.setY(-100);
+				move.setX(-64);
+				move.setY(-64);
+				move.setMaxSpeed(0.3);
+			});
+		} });
+		mDelayedFunctions.push({ nextTurnAt + 750, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setLeft(theCenter.first);
+			move.setTop(0);
+			move.setBottom(1024);
+			move.setRight(1024);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(-64);
+				move.setMaxSpeed(0.3);
+			});
+		} });
+		mDelayedFunctions.push({ nextTurnAt + 750, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setRight(theCenter.first);
+			move.setTop(0);
+			move.setLeft(0);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(64);
+				move.setMaxSpeed(0.3);
+			});
+		} });
+		mDelayedFunctions.push({ nextTurnAt + 800, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setTop(theCenter.first);
+			move.setLeft(0);
+			move.setBottom(1024);
+			move.setRight(1024);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setY(-64);
+				move.setMaxSpeed(0.3);
+			});
+		} });
+		mDelayedFunctions.push({ nextTurnAt + 800, [=](Move& move, const World& world)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setBottom(theCenter.first);
+			move.setLeft(0);
+			move.setTop(0);
+			move.setRight(1024);
+			pushToTheFrontOfQueue([=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setY(64);
+				move.setMaxSpeed(0.3);
 			});
 		} });
 	} });
