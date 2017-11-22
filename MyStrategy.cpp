@@ -134,8 +134,17 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 		vector<double> targetShifts;
 
+		const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j)
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setTop(tankCenter.second + (j - 5) * 6);
+			move.setBottom(tankCenter.second + (j - 4) * 6);
+			move.setLeft(tankCenter.first - (1 + 5 * 6));
+			move.setRight(tankCenter.first + (1 + 5 * 6));
+		};
+
 		if (horisontalFormation) // * * *
-		{//todo
+		{
 			switch (formationIndex)
 			{
 			case 0:
@@ -145,11 +154,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setTop(tankCenter.second + (j - 5) * 6);
-						move.setBottom(tankCenter.second + (j - 4) * 6);
-						move.setLeft(tankCenter.first - (1 + 5 * 6));
-						move.setRight(tankCenter.first + (1 + 5 * 6));
+						selectHorisontallyJthRow(move, tankCenter, j);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
@@ -168,11 +173,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setTop(tankCenter.second + (j - 5) * 6);
-						move.setBottom(tankCenter.second + (j - 4) * 6);
-						move.setLeft(tankCenter.first - (1 + 5 * 6));
-						move.setRight(tankCenter.first + (1 + 5 * 6));
+						selectHorisontallyJthRow(move, tankCenter, j);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
@@ -185,11 +186,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setTop(tankCenter.second + (j - 5) * 6);
-						move.setBottom(tankCenter.second + (j - 4) * 6);
-						move.setLeft(tankCenter.first - (1 + 5 * 6));
-						move.setRight(tankCenter.first + (1 + 5 * 6));
+						selectHorisontallyJthRow(move, tankCenter, j);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
@@ -207,11 +204,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
-						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setTop(tankCenter.second + (j - 5) * 6);
-						move.setBottom(tankCenter.second + (j - 4) * 6);
-						move.setLeft(tankCenter.first - (1 + 5 * 6));
-						move.setRight(tankCenter.first + (1 + 5 * 6));
+						selectHorisontallyJthRow(move, tankCenter, j);
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
