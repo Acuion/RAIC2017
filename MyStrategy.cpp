@@ -14,12 +14,12 @@ void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
 
 xypoint MyStrategy::getCenterOfGroup(VehicleType vt)
 {
-	int x = 0, y = 0, count = 0;
+	double x = 0, y = 0, count = 0;
 	for (auto& q : mOurVehicles)
-		if (q.second.getType() == vt)
+		if (q.second.mType == vt)
 		{
-			x += q.second.getX();
-			y += q.second.getY();
+			x += q.second.mX;
+			y += q.second.mY;
 			count++;
 		}
 
@@ -31,9 +31,9 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	for (auto& x : world.getNewVehicles())
 	{
 		if (x.getPlayerId() != me.getId())
-			mEnemyVehicles[x.getId()] = x;
+			mEnemyVehicles[x.getId()] = { x.getX(), x.getY(), x.getType() };
 		else
-			mOurVehicles[x.getId()] = x;
+			mOurVehicles[x.getId()] = { x.getX(), x.getY(), x.getType() };
 	}
 
 	const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
@@ -133,61 +133,85 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
 
 		vector<double> targetShifts;
-		for (int i = 0; i < 10; ++i)
-			targetShifts.push_back(6 * i);
 
 		if (horisontalFormation) // * * *
 		{//todo
 			switch (formationIndex)
 			{
 			case 0:
+				for (int i = 0; i < 10; ++i)
+					targetShifts.push_back(12 * i);
 				for (int j = 9; j >= 0; --j)
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
 						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setTop(tankCenter.second + (j - 4) * 3 - 2);
-						move.setBottom(tankCenter.second + (j - 4) * 3 + 2);
-						move.setLeft(tankCenter.first - 6 * 3);
-						move.setRight(tankCenter.first + 6 * 3);
+						move.setTop(tankCenter.second + (j - 5) * 6);
+						move.setBottom(tankCenter.second + (j - 4) * 6);
+						move.setLeft(tankCenter.first - (1 + 5 * 6));
+						move.setRight(tankCenter.first + (1 + 5 * 6));
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
-							move.setY(targetShifts[j] - 25.5);
+							move.setY(targetShifts[j]);
 						});
 						swap(mExecutionQueue[0], mExecutionQueue[1]);
 					});
 				}
 				break;
 			case 1:
-				for (int j = 9; j >= 0; --j)
+				for (int i = 0; i < 5; ++i)
+					targetShifts.push_back(6 + 12 * i);
+				for (int i = 0; i < 5; ++i)
+					targetShifts.push_back(-6 - 12 * i);
+				for (int j = 0; j < 5; ++j)
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
 						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setTop(tankCenter.second + (j - 4) * 3 - 2);
-						move.setBottom(tankCenter.second + (j - 4) * 3 + 2);
-						move.setLeft(tankCenter.first - 6 * 3);
-						move.setRight(tankCenter.first + 6 * 3);
+						move.setTop(tankCenter.second + (j - 5) * 6);
+						move.setBottom(tankCenter.second + (j - 4) * 6);
+						move.setLeft(tankCenter.first - (1 + 5 * 6));
+						move.setRight(tankCenter.first + (1 + 5 * 6));
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
-							move.setY(-targetShifts[9 - j]);
+							move.setY(-targetShifts[j]);
+						});
+						swap(mExecutionQueue[0], mExecutionQueue[1]);
+					});
+				}
+				for (int j = 9; j > 5; --j)
+				{
+					mExecutionQueue.push_back([=](Move& move, const World& world)
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setTop(tankCenter.second + (j - 5) * 6);
+						move.setBottom(tankCenter.second + (j - 4) * 6);
+						move.setLeft(tankCenter.first - (1 + 5 * 6));
+						move.setRight(tankCenter.first + (1 + 5 * 6));
+						mExecutionQueue.push_front([=](Move& move, const World& world)
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(-targetShifts[j]);
 						});
 						swap(mExecutionQueue[0], mExecutionQueue[1]);
 					});
 				}
 				break;
 			case 2:
+				for (int i = 0; i < 10; ++i)
+					targetShifts.push_back(-12 * i);
+				reverse(targetShifts.begin(), targetShifts.end());
 				for (int j = 0; j <= 9; ++j)
 				{
 					mExecutionQueue.push_back([=](Move& move, const World& world)
 					{
 						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setTop(tankCenter.second + (j - 4) * 3 - 2);
-						move.setBottom(tankCenter.second + (j - 4) * 3 + 2);
-						move.setLeft(tankCenter.first - 6 * 3);
-						move.setRight(tankCenter.first + 6 * 3);
+						move.setTop(tankCenter.second + (j - 5) * 6);
+						move.setBottom(tankCenter.second + (j - 4) * 6);
+						move.setLeft(tankCenter.first - (1 + 5 * 6));
+						move.setRight(tankCenter.first + (1 + 5 * 6));
 						mExecutionQueue.push_front([=](Move& move, const World& world)
 						{
 							move.setAction(ActionType::MOVE);
@@ -224,6 +248,22 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 {
 	if (world.getTickIndex() == 0)
 		firstTickActions(me, world, game, move);
+
+	for (auto& x : world.getVehicleUpdates())
+		if (mOurVehicles.count(x.getId()))
+		{
+			mOurVehicles[x.getId()].mX = x.getX();
+			mOurVehicles[x.getId()].mY = x.getY();
+			if (!x.getDurability())
+				mOurVehicles.erase(x.getId());
+		}
+		else
+		{
+			mEnemyVehicles[x.getId()].mX = x.getX();
+			mEnemyVehicles[x.getId()].mY = x.getY();
+			if (!x.getDurability())
+				mEnemyVehicles.erase(x.getId());
+		}
 
 	while (mDelayedFunctions.size() && mDelayedFunctions.top().first <= world.getTickIndex())
 	{

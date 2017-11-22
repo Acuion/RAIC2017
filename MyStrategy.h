@@ -16,6 +16,12 @@ using namespace std;
 using turnPrototype = function<void(Move&, const World&)>;
 using xypoint = pair<int, int>;
 
+struct VehicleBasicInfo
+{
+	double mX, mY;
+	VehicleType mType;
+};
+
 class MyStrategy : public Strategy {
 public:
     MyStrategy();
@@ -25,7 +31,7 @@ private:
 	class ComparisonClass
 	{
 	public:
-		bool operator() (const pair<int, function<void(Move&, const World&)>>& a, const pair<int, function<void(Move&, const World&)>>& b)
+		bool operator() (const pair<int, function<void(Move&, const World&)>>& a, const pair<int, function<void(Move&, const World&)>>& b) const
 		{
 			return b.first < a.first;
 		}
@@ -36,7 +42,7 @@ private:
 	void selectVehicles(VehicleType vt, Move& mv);
 
 	deque<turnPrototype> mExecutionQueue;
-	map<int, Vehicle> mOurVehicles, mEnemyVehicles;
+	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
 	priority_queue<pair<int, turnPrototype>,
 		vector<pair<int, turnPrototype>>,
 		ComparisonClass> mDelayedFunctions;
