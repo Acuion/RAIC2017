@@ -483,10 +483,21 @@ MyStrategy::MyStrategy()
 
 		if (world.getTickIndex() - mLastNuke > 30)
 		{
-			move.setAction(ActionType::MOVE);
-			move.setX(nearest.first - theCenter.first);
-			move.setY(nearest.second - theCenter.second);
-			move.setMaxSpeed(0.18);
+			if (currDist > 50)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				move.setMaxSpeed(0.18);
+			}
+			else
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(nearest.first);
+				move.setY(nearest.second);
+				move.setFactor(0.9);
+				move.setMaxSpeed(0.15);
+			}
 		}
 
 		mExecutionQueue.push_back(mInfinityChase);
