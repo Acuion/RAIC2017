@@ -483,14 +483,11 @@ MyStrategy::MyStrategy()
 
 		if (world.getTickIndex() - mLastNuke > 30)
 		{
-			if (currDist > 50)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(theCenter.first);
-				move.setY(theCenter.second);
-				move.setMaxSpeed(0.18);
-			}
-			else
+			move.setAction(ActionType::MOVE);
+			move.setX(nearest.first - theCenter.first);
+			move.setY(nearest.second - theCenter.second);
+			move.setMaxSpeed(0.18);
+			if (abs(move.getX()) < 32 && abs(move.getY()) < 32)
 			{
 				move.setAction(ActionType::SCALE);
 				move.setX(nearest.first);
