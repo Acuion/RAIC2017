@@ -10,6 +10,7 @@
 #include <queue>
 #include <map>
 #include <iostream>
+#include <list>
 
 using namespace model;
 using namespace std;
@@ -41,15 +42,13 @@ private:
 	xypoint getCenterOfGroup(VehicleType vt);
 	void selectVehicles(VehicleType vt, Move& mv);
 
+	bool mOurUnitsDontMoving;
 	int mLastNuke;
-	double mCurrAngle;
 	turnPrototype mInfinityChase;
 
 	deque<turnPrototype> mExecutionQueue;
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
-	priority_queue<pair<int, turnPrototype>,
-		vector<pair<int, turnPrototype>>,
-		ComparisonClass> mDelayedFunctions;
+	deque<pair<function<bool(const World&)>, turnPrototype>> mDelayedFunctions;
 };
 
 #endif
