@@ -131,7 +131,7 @@ void MyFormationBruteforcer::buildPathToPoints(xypoint targetTankCell, xypoint t
 			xypoint nxt = t[0];
 			nxt.first += dr[k];
 			nxt.second += dc[k];
-			auto nxtpos = { nxt, t[1], t[2] };
+			position nxtpos = { nxt, t[1], t[2] };
 			checkAndPush(nxt, nxtpos);
 
 			nxt = t[1];
