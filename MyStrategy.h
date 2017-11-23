@@ -41,6 +41,8 @@ private:
 	xypoint getCenterOfGroup(VehicleType vt);
 	void selectVehicles(VehicleType vt, Move& mv);
 
+	int mLastNuke;
+	double mCurrAngle;
 	turnPrototype mInfinityChase;
 
 	deque<turnPrototype> mExecutionQueue;

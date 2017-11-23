@@ -122,9 +122,10 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	}
 
 	// 2.0 - radius
-	// dist btw units = 3
+	// dist btw units = 6
 	const bool horisontalFormation = mfb.getFormation()[0].second == mfb.getFormation()[1].second;
 	const int formationIndex = (horisontalFormation ? mfb.getFormation()[0].second : mfb.getFormation()[0].first);
+	nextTurnAt += 30;
 
 	mDelayedFunctions.push({nextTurnAt, [=](Move& move, const World& world)
 	{
@@ -221,6 +222,13 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		};
 
 		xypoint theCenter = { (tankCenter.first + ifvCenter.first + arrvCenter.first) / 3, (tankCenter.second + ifvCenter.second + arrvCenter.second) / 3 };
+		if (formationIndex == 0)
+		{
+			if (horisontalFormation)
+				theCenter.second += 75;
+			else
+				theCenter.first += 75;
+		}
 		mExecutionQueue.push_back([=](Move& move, const World& world)
 		{
 			selectVehicles(VehicleType::FIGHTER, move);
@@ -244,6 +252,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 		if (horisontalFormation) // * * *
 		{
+			mCurrAngle = 0;
 			switch (formationIndex)
 			{
 			case 0:
@@ -272,7 +281,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			default:
 				throw;
 			}
-			mDelayedFunctions.push({ nextTurnAt + 380, [=](Move& move, const World& world)
+			mDelayedFunctions.push({ nextTurnAt + 450, [=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::CLEAR_AND_SELECT);
 				move.setLeft(0);
@@ -301,6 +310,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		}
 		else
 		{
+			mCurrAngle = PI / 2;
 			switch (formationIndex)
 			{
 			case 0:
@@ -330,7 +340,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				throw;
 			}
 
-			mDelayedFunctions.push({ nextTurnAt + 380, [=](Move& move, const World& world)
+			mDelayedFunctions.push({ nextTurnAt + 450, [=](Move& move, const World& world)
 			{
 				move.setAction(ActionType::CLEAR_AND_SELECT);
 				move.setTop(0);
@@ -357,144 +367,16 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				});
 			}});
 		}
-		mDelayedFunctions.push({ nextTurnAt + 580, [=](Move& move, const World& world)
+
+		mDelayedFunctions.push({ nextTurnAt + 600, [=](Move& move, const World& world)
 		{
 			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setRight(1024);
-			move.setBottom(1024);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::ROTATE);
-				move.setX(theCenter.first);
-				move.setY(theCenter.second);
-				move.setAngle(PI);
-			});
-		} });
-		//move to the center
-		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setLeft(theCenter.first);
-			move.setBottom(theCenter.second);
-			move.setTop(0);
-			move.setRight(1024);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(-64);
-				move.setY(64);
-				move.setMaxSpeed(0.3);
-			});
-		} });
-		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setRight(theCenter.first);
-			move.setBottom(theCenter.second);
-			move.setTop(0);
 			move.setLeft(0);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(64);
-				move.setY(64);
-				move.setMaxSpeed(0.3);
-			});
-		} });
-		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setRight(theCenter.first);
-			move.setTop(theCenter.second);
-			move.setBottom(1024);
-			move.setLeft(0);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(64);
-				move.setY(-64);
-				move.setMaxSpeed(0.3);
-			});
-		} });
-		mDelayedFunctions.push({ nextTurnAt + 680, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setLeft(theCenter.first);
-			move.setTop(theCenter.second);
-			move.setBottom(1024);
 			move.setRight(1024);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(-64);
-				move.setY(-64);
-				move.setMaxSpeed(0.3);
-			});
-		} });
-		mDelayedFunctions.push({ nextTurnAt + 750, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setLeft(theCenter.first);
 			move.setTop(0);
 			move.setBottom(1024);
-			move.setRight(1024);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(-64);
-				move.setMaxSpeed(0.3);
-			});
 		} });
-		mDelayedFunctions.push({ nextTurnAt + 750, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setRight(theCenter.first);
-			move.setTop(0);
-			move.setLeft(0);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(64);
-				move.setMaxSpeed(0.3);
-			});
-		} });
-		mDelayedFunctions.push({ nextTurnAt + 800, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setTop(theCenter.first);
-			move.setLeft(0);
-			move.setBottom(1024);
-			move.setRight(1024);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setY(-64);
-				move.setMaxSpeed(0.3);
-			});
-		} });
-		mDelayedFunctions.push({ nextTurnAt + 800, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setBottom(theCenter.first);
-			move.setLeft(0);
-			move.setTop(0);
-			move.setRight(1024);
-			pushToTheFrontOfQueue([=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setY(64);
-				move.setMaxSpeed(0.3);
-			});
-		} });
-		mDelayedFunctions.push({ nextTurnAt + 830, [=](Move& move, const World& world)
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setTop(0);
-			move.setLeft(0);
-			move.setBottom(1024);
-			move.setRight(1024);
-		} });
-		
+
 		mDelayedFunctions.push({ nextTurnAt + 930, mInfinityChase });
 	} });
 
@@ -522,6 +404,53 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 				mEnemyVehicles.erase(x.getId());
 		}
 
+	{
+		xypoint theCenter = { 0,0 };
+		for (auto& x : mOurVehicles)
+		{
+			theCenter.first += x.second.mX;
+			theCenter.second += x.second.mY;
+		}
+		theCenter.first /= mOurVehicles.size();
+		theCenter.second /= mOurVehicles.size();
+
+		xypoint nearest = { 512, 512 };
+		double currDist = 1e9;
+		for (auto& x : mEnemyVehicles)
+		{
+			double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
+				(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
+			if (dist < currDist)
+			{
+				nearest = { x.second.mX, x.second.mY };
+				currDist = dist;
+			}
+		}
+
+		int nrid = -1;
+		double cdist = 1e9;
+		for (auto& x : mOurVehicles)
+			if (x.second.mType == VehicleType::FIGHTER)
+			{
+				double dist = sqrt((x.second.mX - nearest.first) * (x.second.mX - nearest.first) +
+					(x.second.mY - nearest.second) * (x.second.mY - nearest.second));
+				if (dist < cdist)
+				{
+					cdist = dist;
+					nrid = x.first;
+				}
+			}
+		if (cdist < 60 && mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex())
+		{
+			double angle = atan2(nearest.second - mOurVehicles[nrid].mY, nearest.first - mOurVehicles[nrid].mX);
+			move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
+			move.setX(nearest.first + 11 * cos(angle));
+			move.setY(nearest.second + 11 * sin(angle));
+			move.setVehicleId(nrid);
+			return;
+		}
+	}
+
 	while (mDelayedFunctions.size() && mDelayedFunctions.top().first <= world.getTickIndex())
 	{
 		mExecutionQueue.push_back(mDelayedFunctions.top().second);
@@ -533,34 +462,40 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 		mExecutionQueue.front()(move, world);
 		mExecutionQueue.pop_front();
 	}
-
-	// TANK && FIGHTER
-	// IFV & HELICOPTER
-	// ARRV
-	// On a circle, or just a block
 }
 
 MyStrategy::MyStrategy()
+	: mLastNuke(-10000)
 {
 	mInfinityChase = [=](Move& move, const World& world)
 	{
-		move.setAction(ActionType::MOVE);
+		xypoint theCenter = { 0,0 };
+		for (auto& x : mOurVehicles)
+		{
+			theCenter.first += x.second.mX;
+			theCenter.second += x.second.mY;
+		}
+		theCenter.first /= mOurVehicles.size();
+		theCenter.second /= mOurVehicles.size();
+
 		xypoint nearest = { 512, 512 };
-		xypoint someOurCoords = { mOurVehicles.begin()->second.mX, mOurVehicles.begin()->second.mY };
 		double currDist = 1e9;
 		for (auto& x : mEnemyVehicles)
 		{
-			double dist = sqrt((x.second.mX - someOurCoords.first) * (x.second.mX - someOurCoords.first) +
-				(x.second.mY - someOurCoords.second) * (x.second.mY - someOurCoords.second));
+			double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
+				(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
 			if (dist < currDist)
 			{
 				nearest = { x.second.mX, x.second.mY };
 				currDist = dist;
 			}
 		}
-		move.setX(nearest.first - someOurCoords.first);
-		move.setY(nearest.second - someOurCoords.second);
-		move.setMaxSpeed(0.29);
+
+		move.setAction(ActionType::MOVE);
+		move.setX(nearest.first - theCenter.first);
+		move.setY(nearest.second - theCenter.second);
+		move.setMaxSpeed(0.18);
+
 		mExecutionQueue.push_back(mInfinityChase);
 	};
 }
