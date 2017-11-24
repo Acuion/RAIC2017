@@ -537,12 +537,12 @@ MyStrategy::MyStrategy()
 			double disttonuke2 = sqrt((world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) +
 				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second));
 
-			if (disttonuke2 < 90)
+			if (disttonuke2 < 90 && world.getOpponentPlayer().getNextNuclearStrikeX() >= 0)
 			{
 				mPanic = true;
 				mPanicPoint = { world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY() };
 			}
-			else if (disttonuke1 < 90)
+			else if (disttonuke1 < 90 && world.getMyPlayer().getNextNuclearStrikeX() >= 0)
 			{
 				mPanic = true;
 				mPanicPoint = { world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY() };
