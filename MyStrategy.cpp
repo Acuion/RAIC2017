@@ -486,49 +486,91 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 }
 
 MyStrategy::MyStrategy()
-	: mOurUnitsDontMoving(true)
-	  , mLastNuke(-10000)
+	: mPanic(false)
+	, mOurUnitsDontMoving(true)
+	, mLastNuke(-10000)
 {
 	mInfinityChase = [=](Move& move, const World& world)
 	{
-		xypoint theCenter = {0,0};
-		for (auto& x : mOurVehicles)
+		if (!mPanic)
 		{
-			theCenter.first += x.second.mX;
-			theCenter.second += x.second.mY;
-		}
-		theCenter.first /= mOurVehicles.size();
-		theCenter.second /= mOurVehicles.size();
-
-		xypoint nearest = {512, 512};
-		double currDist = 1e9;
-		for (auto& x : mEnemyVehicles)
-		{
-			double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
-				(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
-			if (dist < currDist)
+			xypoint theCenter = { 0,0 };
+			for (auto& x : mOurVehicles)
 			{
-				nearest = {x.second.mX, x.second.mY};
-				currDist = dist;
+				theCenter.first += x.second.mX;
+				theCenter.second += x.second.mY;
+			}
+			theCenter.first /= mOurVehicles.size();
+			theCenter.second /= mOurVehicles.size();
+
+			xypoint nearest = { 512, 512 };
+			double currDist = 1e9;
+			for (auto& x : mEnemyVehicles)
+			{
+				double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
+					(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
+				if (dist < currDist)
+				{
+					nearest = { x.second.mX, x.second.mY };
+					currDist = dist;
+				}
+			}
+
+			if (world.getTickIndex() - mLastNuke > 30)
+			{
+				move.setAction(ActionType::MOVE);
+				move.setX(nearest.first - theCenter.first);
+				move.setY(nearest.second - theCenter.second);
+				move.setMaxSpeed(0.18);
+				if (abs(move.getX()) < 32 && abs(move.getY()) < 32 && world.getTickIndex() % 10)
+				{
+					move.setAction(ActionType::SCALE);
+					move.setX(theCenter.first);
+					move.setY(theCenter.second);
+					move.setFactor(0.91);
+					move.setMaxSpeed(0.15);
+				}
+			}
+
+			double disttonuke1 = sqrt((world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) +
+				(world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second));
+			double disttonuke2 = sqrt((world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) +
+				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second));
+
+			if (disttonuke2 < 90)
+			{
+				mPanic = true;
+				mPanicPoint = { world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY() };
+			}
+			else if (disttonuke1 < 90)
+			{
+				mPanic = true;
+				mPanicPoint = { world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY() };
+			}
+			if (mPanic)
+			{
+				mPanicTime = world.getTickIndex();
 			}
 		}
-
-		if (world.getTickIndex() - mLastNuke > 30)
+		else
 		{
-			move.setAction(ActionType::MOVE);
-			move.setX(nearest.first - theCenter.first);
-			move.setY(nearest.second - theCenter.second);
-			move.setMaxSpeed(0.18);
-			if (abs(move.getX()) < 32 && abs(move.getY()) < 32 && world.getTickIndex() % 10)
+			if (world.getTickIndex() - mPanicTime <= 30)
 			{
 				move.setAction(ActionType::SCALE);
-				move.setX(theCenter.first);
-				move.setY(theCenter.second);
-				move.setFactor(0.91);
-				move.setMaxSpeed(0.15);
+				move.setX(mPanicPoint.first);
+				move.setY(mPanicPoint.second);
+				move.setFactor(10);
 			}
+			else if (world.getTickIndex() - mPanicTime <= 60)
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(mPanicPoint.first);
+				move.setY(mPanicPoint.second);
+				move.setFactor(0.1);
+			}
+			else
+				mPanic = false;
 		}
-
 		mExecutionQueue.push_back(mInfinityChase);
 	};
 }

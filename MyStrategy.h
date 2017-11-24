@@ -42,6 +42,9 @@ private:
 	xypoint getCenterOfGroup(VehicleType vt);
 	void selectVehicles(VehicleType vt, Move& mv);
 
+	bool mPanic;
+	int mPanicTime;
+	xypoint mPanicPoint;
 	bool mOurUnitsDontMoving;
 	int mLastNuke;
 	turnPrototype mInfinityChase;
