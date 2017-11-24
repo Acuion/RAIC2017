@@ -453,7 +453,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			{
 				double dist = sqrt((x.second.mX - nearest.first) * (x.second.mX - nearest.first) +
 					(x.second.mY - nearest.second) * (x.second.mY - nearest.second));
-				if (dist < cdist)
+				if (dist < cdist && dist > 35)
 				{
 					cdist = dist;
 					nrid = x.first;
@@ -524,7 +524,7 @@ MyStrategy::MyStrategy()
 				move.setAction(ActionType::SCALE);
 				move.setX(theCenter.first);
 				move.setY(theCenter.second);
-				move.setFactor(0.9);
+				move.setFactor(0.91);
 				move.setMaxSpeed(0.15);
 			}
 		}
