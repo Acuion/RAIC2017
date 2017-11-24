@@ -487,11 +487,12 @@ MyStrategy::MyStrategy()
 			move.setX(nearest.first - theCenter.first);
 			move.setY(nearest.second - theCenter.second);
 			move.setMaxSpeed(0.18);
+			std::cout << move.getX() << ":" << move.getY() << std::endl;
 			if (abs(move.getX()) < 32 && abs(move.getY()) < 32)
 			{
 				move.setAction(ActionType::SCALE);
-				move.setX(nearest.first);
-				move.setY(nearest.second);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
 				move.setFactor(0.9);
 				move.setMaxSpeed(0.15);
 			}
