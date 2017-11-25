@@ -12,6 +12,57 @@ void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
 	mv.setVehicleType(vt);
 }
 
+bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::Move& move)
+{
+	xypoint theCenter = { 0,0 };
+	for (auto& x : mOurVehicles)
+	{
+		theCenter.first += x.second.mX;
+		theCenter.second += x.second.mY;
+	}
+	theCenter.first /= mOurVehicles.size();
+	theCenter.second /= mOurVehicles.size();
+
+	xypoint nearest = { 512, 512 };
+	double currDist = 1e9;
+	for (auto& x : mEnemyVehicles)
+	{
+		double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
+			(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
+		if (dist < currDist)
+		{
+			nearest = { x.second.mX, x.second.mY };
+			currDist = dist;
+		}
+	}
+
+	int nrid = -1;
+	double cdist = 1e9;
+	for (auto& x : mOurVehicles)
+		if (x.second.mType == VehicleType::FIGHTER)
+		{
+			double dist = sqrt((x.second.mX - nearest.first) * (x.second.mX - nearest.first) +
+				(x.second.mY - nearest.second) * (x.second.mY - nearest.second));
+			if (dist < cdist && dist > 35)
+			{
+				cdist = dist;
+				nrid = x.first;
+			}
+		}
+	if (cdist < 60 && mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex())
+	{
+		double angle = atan2(nearest.second - mOurVehicles[nrid].mY, nearest.first - mOurVehicles[nrid].mX);
+		move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
+		move.setX(nearest.first + 11 * cos(angle));
+		move.setY(nearest.second + 11 * sin(angle));
+		move.setVehicleId(nrid);
+		mLastNuke = world.getTickIndex();
+		return true;
+	}
+
+	return false;
+}
+
 xypoint MyStrategy::getCenterOfGroup(VehicleType vt)
 {
 	double x = 0, y = 0, count = 0;
@@ -423,53 +474,8 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			}
 		}
 
-	{
-		xypoint theCenter = {0,0};
-		for (auto& x : mOurVehicles)
-		{
-			theCenter.first += x.second.mX;
-			theCenter.second += x.second.mY;
-		}
-		theCenter.first /= mOurVehicles.size();
-		theCenter.second /= mOurVehicles.size();
-
-		xypoint nearest = {512, 512};
-		double currDist = 1e9;
-		for (auto& x : mEnemyVehicles)
-		{
-			double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
-				(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
-			if (dist < currDist)
-			{
-				nearest = {x.second.mX, x.second.mY};
-				currDist = dist;
-			}
-		}
-
-		int nrid = -1;
-		double cdist = 1e9;
-		for (auto& x : mOurVehicles)
-			if (x.second.mType == VehicleType::FIGHTER)
-			{
-				double dist = sqrt((x.second.mX - nearest.first) * (x.second.mX - nearest.first) +
-					(x.second.mY - nearest.second) * (x.second.mY - nearest.second));
-				if (dist < cdist && dist > 35)
-				{
-					cdist = dist;
-					nrid = x.first;
-				}
-			}
-		if (cdist < 60 && mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex())
-		{
-			double angle = atan2(nearest.second - mOurVehicles[nrid].mY, nearest.first - mOurVehicles[nrid].mX);
-			move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
-			move.setX(nearest.first + 11 * cos(angle));
-			move.setY(nearest.second + 11 * sin(angle));
-			move.setVehicleId(nrid);
-			mLastNuke = world.getTickIndex();
-			return;
-		}
-	}
+	if (nukeEmAll(me, world, move))
+		return;
 
 	if (!mExecutionQueue.size() && mDelayedFunctions.size())
 		if (mDelayedFunctions.front().first(world))
