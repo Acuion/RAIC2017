@@ -525,8 +525,8 @@ MyStrategy::MyStrategy()
 				if (abs(move.getX()) < 32 && abs(move.getY()) < 32 && world.getTickIndex() % 10)
 				{
 					move.setAction(ActionType::SCALE);
-					move.setX(theCenter.first);
-					move.setY(theCenter.second);
+					move.setX(theCenter.first + 12);
+					move.setY(theCenter.second + 12);
 					move.setFactor(0.91);
 					move.setMaxSpeed(0.15);
 				}
@@ -537,12 +537,12 @@ MyStrategy::MyStrategy()
 			double disttonuke2 = sqrt((world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) +
 				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second));
 
-			if (disttonuke2 < 90 && world.getOpponentPlayer().getNextNuclearStrikeX() >= 0)
+			if (disttonuke2 < 110 && world.getOpponentPlayer().getNextNuclearStrikeX() >= 0)
 			{
 				mPanic = true;
 				mPanicPoint = { world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY() };
 			}
-			else if (disttonuke1 < 90 && world.getMyPlayer().getNextNuclearStrikeX() >= 0)
+			else if (disttonuke1 < 110 && world.getMyPlayer().getNextNuclearStrikeX() >= 0)
 			{
 				mPanic = true;
 				mPanicPoint = { world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY() };
@@ -552,7 +552,7 @@ MyStrategy::MyStrategy()
 				mPanicTime = world.getTickIndex();
 			}
 		}
-		else
+		if (mPanic)
 		{
 			if (world.getTickIndex() - mPanicTime <= 30)
 			{
