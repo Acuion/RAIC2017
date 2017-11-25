@@ -1,8 +1,10 @@
 #include "MyStrategy.h"
 #include "MyFormationBruteforcer.h"
+#include <set>
 
 #define PI 3.14159265358979323846
 #define _USE_MATH_DEFINES
+#define sq(x) ((x)*(x))
 
 void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
 {
@@ -14,48 +16,76 @@ void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
 
 bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::Move& move)
 {
-	xypoint theCenter = { 0,0 };
-	for (auto& x : mOurVehicles)
-	{
-		theCenter.first += x.second.mX;
-		theCenter.second += x.second.mY;
-	}
-	theCenter.first /= mOurVehicles.size();
-	theCenter.second /= mOurVehicles.size();
+	set<xypoint> nukePlaces;
+	map<xypoint, int> ptid;
 
-	xypoint nearest = { 512, 512 };
-	double currDist = 1e9;
-	for (auto& x : mEnemyVehicles)
+	for (auto& u : mOurVehicles)
 	{
-		double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
-			(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
-		if (dist < currDist)
+		xypoint gridedPos = { round(u.second.mX / 4) * 4, round(u.second.mY / 4) * 4 };
+		double r = 0;
+		switch (u.second.mType)
 		{
-			nearest = { x.second.mX, x.second.mY };
-			currDist = dist;
+		case VehicleType::ARRV:
+			r = 60;
+			break;
+		case VehicleType::FIGHTER:
+			r = 120;
+			break;
+		case VehicleType::HELICOPTER:
+			r = 100;
+			break;
+		case VehicleType::IFV:
+			r = 80;
+			break;
+		case VehicleType::TANK:
+			r = 80;
+			break;
+		}
+		r *= 0.6;
+		r = floor(r / 4) * 4;
+
+		for (int x = gridedPos.first - r; x <= gridedPos.first + r; x += 16)
+			for (int y = gridedPos.second - r; y <= gridedPos.second + r; y += 16)
+				if ((x - gridedPos.first) * (x - gridedPos.first) + (y - gridedPos.second) * (y - gridedPos.second) <= r * r)
+				{
+					nukePlaces.insert({ x, y });
+					ptid[{x, y}] = u.first;
+				}
+	}
+
+	xypoint bestnp = { -1, -1 };
+	double bestscore = -1e9;
+
+	for (auto& np : nukePlaces)
+	{
+		double score = 0;
+		for (auto& u : mEnemyVehicles)
+		{
+			double dist = sqrt(sq(np.first - u.second.mX) + sq(np.second - u.second.mY));
+			if (dist > 50)
+				continue;
+			score += (99 - 99 * (dist / 50));
+		}
+		for (auto& u : mOurVehicles)
+		{
+			double dist = sqrt(sq(np.first - u.second.mX) + sq(np.second - u.second.mY));
+			if (dist > 50)
+				continue;
+			score -= (99 - 99 * (dist / 50)) * 0.7;
+		}
+		if (score > bestscore)
+		{
+			bestscore = score;
+			bestnp = np;
 		}
 	}
 
-	int nrid = -1;
-	double cdist = 1e9;
-	for (auto& x : mOurVehicles)
-		if (x.second.mType == VehicleType::FIGHTER)
-		{
-			double dist = sqrt((x.second.mX - nearest.first) * (x.second.mX - nearest.first) +
-				(x.second.mY - nearest.second) * (x.second.mY - nearest.second));
-			if (dist < cdist && dist > 35)
-			{
-				cdist = dist;
-				nrid = x.first;
-			}
-		}
-	if (cdist < 60 && mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex())
+	if (bestscore > 0)
 	{
-		double angle = atan2(nearest.second - mOurVehicles[nrid].mY, nearest.first - mOurVehicles[nrid].mX);
 		move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
-		move.setX(nearest.first + 11 * cos(angle));
-		move.setY(nearest.second + 11 * sin(angle));
-		move.setVehicleId(nrid);
+		move.setVehicleId(ptid[bestnp]);
+		move.setX(bestnp.first);
+		move.setY(bestnp.second);
 		mLastNuke = world.getTickIndex();
 		return true;
 	}
@@ -474,7 +504,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			}
 		}
 
-	if (nukeEmAll(me, world, move))
+	if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
 		return;
 
 	if (!mExecutionQueue.size() && mDelayedFunctions.size())
