@@ -504,9 +504,6 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			}
 		}
 
-	if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
-		return;
-
 	if (!mExecutionQueue.size() && mDelayedFunctions.size())
 		if (mDelayedFunctions.front().first(world))
 		{
@@ -514,10 +511,15 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			mDelayedFunctions.pop_front();
 		}
 
-	if (mExecutionQueue.size() && world.getTickIndex() % 5 == 0)
+	if (world.getTickIndex() % 5 == 0)
 	{
-		mExecutionQueue.front()(move, world);
-		mExecutionQueue.pop_front();
+		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
+			return;
+		if (mExecutionQueue.size())
+		{
+			mExecutionQueue.front()(move, world);
+			mExecutionQueue.pop_front();
+		}
 	}
 }
 
