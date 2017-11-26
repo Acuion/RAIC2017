@@ -457,6 +457,15 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 			mDelayedFunctions.push_back({
 				allStopedFunc, [=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				move.setFactor(0.2);
+			}
+			});
+			mDelayedFunctions.push_back({
+				allStopedFunc, [=](Move& move, const World& world)
 				{
 					move.setAction(ActionType::ROTATE);
 					move.setX(theCenter.first);
