@@ -25,11 +25,14 @@
     <Filter Include="Source Files\model">
       <UniqueIdentifier>{eeedc3fb-d4a0-4c60-8a78-4879474b7f75}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\My">
+      <UniqueIdentifier>{2a25e808-c903-4850-9327-47c552149646}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\My">
+      <UniqueIdentifier>{07880b16-0bd2-4629-bf42-c22c002cb575}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MyStrategy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RemoteProcessClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -81,14 +84,14 @@
     <ClCompile Include="model\VehicleUpdate.cpp">
       <Filter>Source Files\model</Filter>
     </ClCompile>
+    <ClCompile Include="MyStrategy.cpp">
+      <Filter>Source Files\My</Filter>
+    </ClCompile>
     <ClCompile Include="MyFormationBruteforcer.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\My</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MyStrategy.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RemoteProcessClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -162,7 +165,10 @@
       <Filter>Header Files\model</Filter>
     </ClInclude>
     <ClInclude Include="MyFormationBruteforcer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\My</Filter>
+    </ClInclude>
+    <ClInclude Include="MyStrategy.h">
+      <Filter>Header Files\My</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
