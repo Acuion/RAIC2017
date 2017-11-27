@@ -90,6 +90,12 @@
     <ClCompile Include="MyFormationBruteforcer.cpp">
       <Filter>Source Files\My</Filter>
     </ClCompile>
+    <ClCompile Include="MyUnitGroup.cpp">
+      <Filter>Source Files\My</Filter>
+    </ClCompile>
+    <ClCompile Include="MyGlobalInfoStorer.cpp">
+      <Filter>Source Files\My</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RemoteProcessClient.h">
@@ -168,6 +174,12 @@
       <Filter>Header Files\My</Filter>
     </ClInclude>
     <ClInclude Include="MyStrategy.h">
+      <Filter>Header Files\My</Filter>
+    </ClInclude>
+    <ClInclude Include="MyUnitGroup.h">
+      <Filter>Header Files\My</Filter>
+    </ClInclude>
+    <ClInclude Include="MyGlobalInfoStorer.h">
       <Filter>Header Files\My</Filter>
     </ClInclude>
   </ItemGroup>

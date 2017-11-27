@@ -6,6 +6,8 @@
 #define _USE_MATH_DEFINES
 #define sq(x) ((x)*(x))
 
+#define BYVALMOVEFUNCHEADER [=](Move& move, const World& world)
+
 void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
 {
 	mv.setAction(ActionType::CLEAR_AND_SELECT);
@@ -19,7 +21,7 @@ bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::M
 	set<xypoint> nukePlaces;
 	map<xypoint, int> ptid;
 
-	for (auto& u : mOurVehicles)
+	for (auto& u : mGlobaler.getOurVehicles())
 	{
 		xypoint gridedPos = { round(u.second.mX / 4) * 4, round(u.second.mY / 4) * 4 };
 		double r = 0;
@@ -59,14 +61,14 @@ bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::M
 	for (auto& np : nukePlaces)
 	{
 		double score = 0;
-		for (auto& u : mEnemyVehicles)
+		for (auto& u : mGlobaler.getEnemyVehicles())
 		{
 			double dist = sqrt(sq(np.first - u.second.mX) + sq(np.second - u.second.mY));
 			if (dist > 50)
 				continue;
 			score += (99 - 99 * (dist / 50));
 		}
-		for (auto& u : mOurVehicles)
+		for (auto& u : mGlobaler.getOurVehicles())
 		{
 			double dist = sqrt(sq(np.first - u.second.mX) + sq(np.second - u.second.mY));
 			if (dist > 50)
@@ -93,32 +95,21 @@ bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::M
 	return false;
 }
 
-xypoint MyStrategy::getCenterOfGroup(VehicleType vt)
-{
-	double x = 0, y = 0, count = 0;
-	for (auto& q : mOurVehicles)
-		if (q.second.mType == vt)
-		{
-			x += q.second.mX;
-			y += q.second.mY;
-			count++;
-		}
-
-	return {x / count, y / count};
-}
-
 void MyStrategy::firstTickActions(const Player& me, const World& world, const Game& game, Move& move)
 {
-	for (auto& x : world.getNewVehicles())
+	auto getCenterOfGroup = [&](VehicleType vt)
 	{
-		if (x.getPlayerId() != me.getId())
-			mEnemyVehicles[x.getId()] = {x.getX(), x.getY(), x.getType()};
-		else
-			mOurVehicles[x.getId()] = {x.getX(), x.getY(), x.getType()};
-	}
+		double x = 0, y = 0, count = 0;
+		for (auto& q : mGlobaler.getOurVehicles())
+			if (q.second.mType == vt)
+			{
+				x += q.second.mX;
+				y += q.second.mY;
+				count++;
+			}
 
-	const auto passFunc = function<bool(const World&)>([=](const World&) { return true; });
-	const auto allStopedFunc = function<bool(const World&)>([=](const World&) { return mOurUnitsDontMoving; });
+		return make_pair(x / count, y / count);
+	};
 
 	const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
 	const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
@@ -171,11 +162,11 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			}
 
 			double moveAngle = atan2(turn.mMoveTo.second - turn.mMoveFrom.second, turn.mMoveTo.first - turn.mMoveFrom.first);
-			mDelayedFunctions.push_back(make_pair(nowRunning.size() ? passFunc : allStopedFunc,
-			                                      [=](Move& move, const World& world)
+			mMacroConditionalQueue.push_back(make_pair(nowRunning.size() ? passFunc : allStopedFunc,
+			                                      BYVALMOVEFUNCHEADER
 			                                      {
 				                                      selectVehicles(turn.mVt, move);
-				                                      mExecutionQueue.push_front([=](Move& move, const World& world)
+				                                      mMacroExecutionQueue.push_front(BYVALMOVEFUNCHEADER
 				                                      {
 					                                      move.setAction(ActionType::MOVE);
 					                                      move.setX(cos(moveAngle) * 75);
@@ -185,7 +176,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					                                      if (fabs(move.getY()) < 1e-6)
 						                                      move.setY(0);
 				                                      });
-				                                      swap(mExecutionQueue[0], mExecutionQueue[1]);
+				                                      swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
 			                                      }));
 
 			nowRunning.push_back(turn);
@@ -203,8 +194,8 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 
 
-	mDelayedFunctions.push_back({
-		allStopedFunc, [=](Move& move, const World& world)
+	mMacroConditionalQueue.push_back({
+		allStopedFunc, BYVALMOVEFUNCHEADER
 		{
 			const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
 			const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
@@ -214,8 +205,8 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 			const auto pushToTheFrontOfQueue = [=](turnPrototype func)
 			{
-				mExecutionQueue.push_front(func);
-				swap(mExecutionQueue[0], mExecutionQueue[1]);
+				mMacroExecutionQueue.push_front(func);
+				swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
 			};
 
 			const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
@@ -240,38 +231,38 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 			const auto enqueueToFrontMoveVertOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
 			{
-				mExecutionQueue.push_front([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_front(BYVALMOVEFUNCHEADER
 				{
 					move.setAction(ActionType::MOVE);
 					move.setY(targetShifts[j] + shift);
 				});
-				swap(mExecutionQueue[0], mExecutionQueue[1]);
+				swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
 			};
 
 			const auto enqueueToFrontMoveHorisOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
 			{
-				mExecutionQueue.push_front([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_front(BYVALMOVEFUNCHEADER
 				{
 					move.setAction(ActionType::MOVE);
 					move.setX(targetShifts[j] + shift);
 				});
-				swap(mExecutionQueue[0], mExecutionQueue[1]);
+				swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
 			};
 
 			const auto processMovesWithShiftsVert = [=](vector<double> targetShifts, int j, int tankShift, int ifvShift,
 			                                            int arrvShift)
 			{
-				mExecutionQueue.push_back([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_back(BYVALMOVEFUNCHEADER
 				{
 					selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
 					enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, tankShift);
 				});
-				mExecutionQueue.push_back([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_back(BYVALMOVEFUNCHEADER
 				{
 					selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
 					enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, ifvShift);
 				});
-				mExecutionQueue.push_back([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_back(BYVALMOVEFUNCHEADER
 				{
 					selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
 					enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, arrvShift);
@@ -281,17 +272,17 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			const auto processMovesWithShiftsHoris = [=](vector<double> targetShifts, int j, int tankShift, int ifvShift,
 			                                             int arrvShift)
 			{
-				mExecutionQueue.push_back([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_back(BYVALMOVEFUNCHEADER
 				{
 					selectVerticallyJthRow(move, tankCenter, j, VehicleType::TANK);
 					enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, tankShift);
 				});
-				mExecutionQueue.push_back([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_back(BYVALMOVEFUNCHEADER
 				{
 					selectVerticallyJthRow(move, ifvCenter, j, VehicleType::IFV);
 					enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, ifvShift);
 				});
-				mExecutionQueue.push_back([=](Move& move, const World& world)
+				mMacroExecutionQueue.push_back(BYVALMOVEFUNCHEADER
 				{
 					selectVerticallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
 					enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, arrvShift);
@@ -340,30 +331,30 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				default:
 					throw;
 				}
-				mDelayedFunctions.push_back({
-					allStopedFunc, [=](Move& move, const World& world)
+				mMacroConditionalQueue.push_back({
+					allStopedFunc, BYVALMOVEFUNCHEADER
 					{
 						move.setAction(ActionType::CLEAR_AND_SELECT);
 						move.setLeft(0);
 						move.setRight(45 + 50);
 						move.setTop(0);
 						move.setBottom(1024);
-						pushToTheFrontOfQueue([=](Move& move, const World& world)
+						pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 						{
 							move.setAction(ActionType::MOVE);
 							move.setX(75);
-							pushToTheFrontOfQueue([=](Move& move, const World& world)
+							pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 							{
 								move.setAction(ActionType::CLEAR_AND_SELECT);
 								move.setLeft(160);
 								move.setRight(1024);
 								move.setTop(0);
 								move.setBottom(1024);
-								pushToTheFrontOfQueue([=](Move& move, const World& world)
+								pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 								{
 									move.setAction(ActionType::MOVE);
 									move.setX(-75);
-									pushToTheFrontOfQueue([=](Move& move, const World& world)
+									pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 									{
 										move.setAction(ActionType::CLEAR_AND_SELECT);
 										move.setTop(0);
@@ -408,30 +399,30 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					throw;
 				}
 
-				mDelayedFunctions.push_back({
-					allStopedFunc, [=](Move& move, const World& world)
+				mMacroConditionalQueue.push_back({
+					allStopedFunc, BYVALMOVEFUNCHEADER
 					{
 						move.setAction(ActionType::CLEAR_AND_SELECT);
 						move.setTop(0);
 						move.setBottom(45 + 50);
 						move.setLeft(0);
 						move.setRight(1024);
-						pushToTheFrontOfQueue([=](Move& move, const World& world)
+						pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 						{
 							move.setAction(ActionType::MOVE);
 							move.setY(75);
-							pushToTheFrontOfQueue([=](Move& move, const World& world)
+							pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 							{
 								move.setAction(ActionType::CLEAR_AND_SELECT);
 								move.setTop(160);
 								move.setBottom(1024);
 								move.setLeft(0);
 								move.setRight(1024);
-								pushToTheFrontOfQueue([=](Move& move, const World& world)
+								pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 								{
 									move.setAction(ActionType::MOVE);
 									move.setY(-75);
-									pushToTheFrontOfQueue([=](Move& move, const World& world)
+									pushToTheFrontOfQueue(BYVALMOVEFUNCHEADER
 									{
 										move.setAction(ActionType::CLEAR_AND_SELECT);
 										move.setTop(0);
@@ -446,8 +437,8 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				});
 			}
 
-			mDelayedFunctions.push_back({
-				allStopedFunc, [=](Move& move, const World& world)
+			mMacroConditionalQueue.push_back({
+				allStopedFunc, BYVALMOVEFUNCHEADER
 				{
 					move.setAction(ActionType::ROTATE);
 					move.setX(theCenter.first);
@@ -458,8 +449,8 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 						move.setAngle(-PI / 4);
 				}
 			});
-			mDelayedFunctions.push_back({
-				allStopedFunc, [=](Move& move, const World& world)
+			mMacroConditionalQueue.push_back({
+				allStopedFunc, BYVALMOVEFUNCHEADER
 			{
 				move.setAction(ActionType::SCALE);
 				move.setX(theCenter.first);
@@ -467,7 +458,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				move.setFactor(0.2);
 			}
 			});
-			mDelayedFunctions.push_back({allStopedFunc, mInfinityChase});
+			mMacroConditionalQueue.push_back({allStopedFunc, mInfinityChase});
 		}
 	});
 
@@ -476,74 +467,54 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 void MyStrategy::move(const Player& me, const World& world, const Game& game, Move& move)
 {
+	mGlobaler.processNews(world.getNewVehicles(), me.getId());
+	mGlobaler.processUpdates(world.getVehicleUpdates());
+
 	if (world.getTickIndex() == 0)
 		firstTickActions(me, world, game, move);
+	//todo: ^
 
-	mOurUnitsDontMoving = true;
-	for (auto& x : world.getVehicleUpdates())
-		if (mOurVehicles.count(x.getId()))
+	if (!mMacroExecutionQueue.size() && mMacroConditionalQueue.size())
+		if (mMacroConditionalQueue.front().first(world))
 		{
-			if (!x.getDurability())
-				mOurVehicles.erase(x.getId());
-			else
-			{
-				if (mOurVehicles[x.getId()].mX != x.getX() || mOurVehicles[x.getId()].mY != x.getY())
-					mOurUnitsDontMoving = false;
-				mOurVehicles[x.getId()].mX = x.getX();
-				mOurVehicles[x.getId()].mY = x.getY();
-			}
-		}
-		else
-		{
-			if (!x.getDurability())
-				mEnemyVehicles.erase(x.getId());
-			else
-			{
-				mEnemyVehicles[x.getId()].mX = x.getX();
-				mEnemyVehicles[x.getId()].mY = x.getY();
-			}
-		}
-
-	if (!mExecutionQueue.size() && mDelayedFunctions.size())
-		if (mDelayedFunctions.front().first(world))
-		{
-			mExecutionQueue.push_back(mDelayedFunctions.front().second);
-			mDelayedFunctions.pop_front();
+			mMacroExecutionQueue.push_back(mMacroConditionalQueue.front().second);
+			mMacroConditionalQueue.pop_front();
 		}
 
 	if (world.getTickIndex() % 5 == 0)
 	{
 		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
 			return;
-		if (mExecutionQueue.size())
+
+		if (mMacroExecutionQueue.size())
 		{
-			mExecutionQueue.front()(move, world);
-			mExecutionQueue.pop_front();
+			mMacroExecutionQueue.front()(move, world);
+			mMacroExecutionQueue.pop_front();
 		}
 	}
+
 }
 
 MyStrategy::MyStrategy()
 	: mPanic(false)
-	, mOurUnitsDontMoving(true)
 	, mLastNuke(-10000)
 {
-	mInfinityChase = [=](Move& move, const World& world)
+	mInfinityChase = BYVALMOVEFUNCHEADER
 	{
-		if (!mPanic)
+		if (!mPanic) // todo: move panic to the main
 		{
 			xypoint theCenter = { 0,0 };
-			for (auto& x : mOurVehicles)
+			for (auto& x : mGlobaler.getOurVehicles())
 			{
 				theCenter.first += x.second.mX;
 				theCenter.second += x.second.mY;
 			}
-			theCenter.first /= mOurVehicles.size();
-			theCenter.second /= mOurVehicles.size();
+			theCenter.first /= mGlobaler.getOurVehicles().size();
+			theCenter.second /= mGlobaler.getOurVehicles().size();
 
 			xypoint nearest = { 512, 512 };
 			double currDist = 1e9;
-			for (auto& x : mEnemyVehicles)
+			for (auto& x : mGlobaler.getEnemyVehicles())
 			{
 				double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
 					(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
@@ -609,6 +580,6 @@ MyStrategy::MyStrategy()
 			else
 				mPanic = false;
 		}
-		mExecutionQueue.push_back(mInfinityChase);
+		mMacroExecutionQueue.push_back(mInfinityChase);
 	};
 }

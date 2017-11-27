@@ -138,7 +138,9 @@
     <ClCompile Include="model\VehicleUpdate.cpp" />
     <ClCompile Include="model\World.cpp" />
     <ClCompile Include="MyFormationBruteforcer.cpp" />
+    <ClCompile Include="MyGlobalInfoStorer.cpp" />
     <ClCompile Include="MyStrategy.cpp" />
+    <ClCompile Include="MyUnitGroup.cpp" />
     <ClCompile Include="RemoteProcessClient.cpp" />
     <ClCompile Include="Runner.cpp" />
     <ClCompile Include="Strategy.cpp" />
@@ -166,7 +168,9 @@
     <ClInclude Include="model\WeatherType.h" />
     <ClInclude Include="model\World.h" />
     <ClInclude Include="MyFormationBruteforcer.h" />
+    <ClInclude Include="MyGlobalInfoStorer.h" />
     <ClInclude Include="MyStrategy.h" />
+    <ClInclude Include="MyUnitGroup.h" />
     <ClInclude Include="RemoteProcessClient.h" />
     <ClInclude Include="Runner.h" />
     <ClInclude Include="Strategy.h" />
