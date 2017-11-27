@@ -80,7 +80,7 @@ bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::M
 		}
 	}
 
-	if (bestscore > 0)
+	if (bestscore > 0.3)
 	{
 		move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
 		move.setVehicleId(ptid[bestnp]);
@@ -457,15 +457,6 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 
 			mDelayedFunctions.push_back({
 				allStopedFunc, [=](Move& move, const World& world)
-			{
-				move.setAction(ActionType::SCALE);
-				move.setX(theCenter.first);
-				move.setY(theCenter.second);
-				move.setFactor(0.2);
-			}
-			});
-			mDelayedFunctions.push_back({
-				allStopedFunc, [=](Move& move, const World& world)
 				{
 					move.setAction(ActionType::ROTATE);
 					move.setX(theCenter.first);
@@ -475,6 +466,15 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 					else
 						move.setAngle(-PI / 4);
 				}
+			});
+			mDelayedFunctions.push_back({
+				allStopedFunc, [=](Move& move, const World& world)
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				move.setFactor(0.2);
+			}
 			});
 			mDelayedFunctions.push_back({allStopedFunc, mInfinityChase});
 		}
