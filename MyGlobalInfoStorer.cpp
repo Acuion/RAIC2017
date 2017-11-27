@@ -77,3 +77,8 @@ const VehicleBasicInfo& MyGlobalInfoStorer::getUnitInfo(int id) const
 		return mOurVehicles.at(id);
 	return mEnemyVehicles.at(id);
 }
+
+bool MyGlobalInfoStorer::anyAllyMoved() const
+{
+	return mAllyMovedThisTurn.size();
+}

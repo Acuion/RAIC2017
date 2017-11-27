@@ -26,6 +26,7 @@ public:
 	bool allyMoved(int id) const;
 	bool isAlly(int id) const;
 	const VehicleBasicInfo& getUnitInfo(int id) const;
+	bool anyAllyMoved() const;
 private:
 	set<int> mSelectedAllies;
 	map<int, bool> mAllyMovedThisTurn;

@@ -36,26 +36,75 @@ bool MyUnitGroup::act(Move& move, const World& world)
 		}
 	}
 
+	if (!mCurrentExecutionQueue.size())
+		return false;
+
 	if (sCurrentlySelectedGroup != mGroupNumber)
 	{
-		move.setAction(ActionType::CLEAR_AND_SELECT);
-		move.setGroup(mGroupNumber);
+		forcedSelect(move);
 		return true;
 	}
 
-	if (mCurrentExecutionQueue.size())
-	{
-		mCurrentExecutionQueue.front()(move, world);
-		mCurrentExecutionQueue.pop_front();
-		return true;
-	}
-
-	return false;
+	mCurrentExecutionQueue.front()(move, world);
+	mCurrentExecutionQueue.pop_front();
+	return true;
 }
 
 void MyUnitGroup::pushToConditionalQueue(pair<CondQueueCondition, function<void(Move&, const World&)>> func)
 {
 	mConditionalQueue.push_back(func);
+}
+
+void MyUnitGroup::move(dxypoint vector, bool saveFormation)
+{
+	if (saveFormation)
+	{
+		mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+		{
+			move.setAction(ActionType::MOVE);
+			move.setX(vector.first);
+			move.setY(vector.second);
+			move.setMaxSpeed(getMaxSpeedOnVector(vector, world));
+		} });
+	}
+	else
+	{
+		mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+		{
+			move.setAction(ActionType::MOVE);
+			move.setX(vector.first);
+			move.setY(vector.second);
+		} });
+	}
+}
+
+void MyUnitGroup::scale(dxypoint point, double factor)
+{
+	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+	{
+		move.setAction(ActionType::SCALE);
+		move.setX(point.first);
+		move.setY(point.second);
+		move.setFactor(factor);
+	} });
+}
+
+void MyUnitGroup::rotate(dxypoint point, double angle)
+{
+	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+	{
+		move.setAction(ActionType::ROTATE);
+		move.setX(point.first);
+		move.setY(point.second);
+		move.setAngle(angle);
+	} });
+}
+
+void MyUnitGroup::forcedSelect(Move& move)
+{
+	move.setAction(ActionType::CLEAR_AND_SELECT);
+	move.setGroup(mGroupNumber);
+	sCurrentlySelectedGroup = mGroupNumber;
 }
 
 bool MyUnitGroup::moving() const
@@ -70,6 +119,19 @@ bool MyUnitGroup::moving() const
 	return !allStopped;
 }
 
+xypoint MyUnitGroup::getCenterOfGroup() const
+{
+	xypoint center = { 0,0 };
+	for (auto& x : mIngroupIds)
+	{
+		center.first += mGlobaler.getUnitInfo(x).mX;
+		center.second += mGlobaler.getUnitInfo(x).mY;
+	}
+	center.first /= mIngroupIds.size();
+	center.second /= mIngroupIds.size();
+	return center;
+}
+
 MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler) // will assign (takes 1 turn)
 	: mGlobaler(globaler)
 {
@@ -80,4 +142,9 @@ MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStore
 
 	move.setAction(ActionType::ASSIGN);
 	move.setGroup(mGroupNumber);
+}
+
+double MyUnitGroup::getMaxSpeedOnVector(dxypoint vector, const World& world)
+{
+	return 0.18; // todo
 }
