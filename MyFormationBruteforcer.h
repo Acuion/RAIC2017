@@ -17,20 +17,24 @@ class MyFormationBruteforcer
 {
 public:
 	void buildPathToFormation();
-	vector<FormationStep> getFormationPath() const;
-	vector<xypoint> getFormation() const;
+	vector<FormationStep> getLandFormationPath() const;
+	vector<FormationStep> getAirFormationPath() const;
+	vector<xypoint> getLandFormation() const;
 
-	MyFormationBruteforcer(xypoint tankStartCell, xypoint ifvStartCell, xypoint arrvStartCell);
+	MyFormationBruteforcer(xypoint tankStartCell, xypoint ifvStartCell, xypoint arrvStartCell, xypoint fighterStartCell, xypoint helicopterStartCell);
 	~MyFormationBruteforcer();
 private:
-	void buildPathToPoints(xypoint targetTankCell, xypoint targetIfvCell, xypoint targetArrvCell);
+	void buildLandPathToPoints(xypoint targetTankCell, xypoint targetIfvCell, xypoint targetArrvCell);
+	void buildAirPath();
 
-	bool mPathIsEmpty;
-	vector<FormationStep> mCurrentFormationPath;
-	vector<xypoint> mFinalFormation;
+	bool mLandPathIsEmpty, mAirPathIsEmpty;
+	vector<FormationStep> mCurrentLandFormationPath, mCurrentAirFormationPath;
+	vector<xypoint> mFinalLandFormation;
 
 	xypoint mTankStartCell;
 	xypoint mIfvStartCell;
 	xypoint mArrvStartCell;
+	xypoint mFighterStartCell;
+	xypoint mHelicopterStartCell;
 };
 

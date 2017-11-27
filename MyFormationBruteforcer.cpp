@@ -20,31 +20,41 @@ void MyFormationBruteforcer::buildPathToFormation()
 	for (auto& x : rows)
 		do
 		{
-			buildPathToPoints(x[0], x[1], x[2]);
+			buildLandPathToPoints(x[0], x[1], x[2]);
 		} while (next_permutation(x.begin(), x.end()));
 
 	for (auto& x : cols)
 		do
 		{
-			buildPathToPoints(x[0], x[1], x[2]);
+			buildLandPathToPoints(x[0], x[1], x[2]);
 		} while (next_permutation(x.begin(), x.end()));
+
+	buildAirPath();
 }
 
-vector<FormationStep> MyFormationBruteforcer::getFormationPath() const
+vector<FormationStep> MyFormationBruteforcer::getLandFormationPath() const
 {
-	return mCurrentFormationPath;
+	return mCurrentLandFormationPath;
 }
 
-vector<xypoint> MyFormationBruteforcer::getFormation() const
+vector<FormationStep> MyFormationBruteforcer::getAirFormationPath() const
 {
-	return mFinalFormation;
+	return mCurrentAirFormationPath;
 }
 
-MyFormationBruteforcer::MyFormationBruteforcer(const xypoint tankStartCell, const xypoint ifvStartCell, const xypoint arrvStartCell)
-	: mPathIsEmpty(true)
+vector<xypoint> MyFormationBruteforcer::getLandFormation() const
+{
+	return mFinalLandFormation;
+}
+
+MyFormationBruteforcer::MyFormationBruteforcer(xypoint tankStartCell, xypoint ifvStartCell, xypoint arrvStartCell, xypoint fighterStartCell, xypoint helicopterStartCell)
+	: mLandPathIsEmpty(true)
+	, mAirPathIsEmpty(true)
 	, mTankStartCell(tankStartCell)
 	, mIfvStartCell(ifvStartCell)
 	, mArrvStartCell(arrvStartCell)
+	, mFighterStartCell(fighterStartCell)
+	, mHelicopterStartCell(helicopterStartCell)
 {
 }
 
@@ -52,7 +62,7 @@ MyFormationBruteforcer::~MyFormationBruteforcer()
 {
 }
 
-void MyFormationBruteforcer::buildPathToPoints(xypoint targetTankCell, xypoint targetIfvCell, xypoint targetArrvCell)
+void MyFormationBruteforcer::buildLandPathToPoints(xypoint targetTankCell, xypoint targetIfvCell, xypoint targetArrvCell)
 {
 	using position = vector<xypoint>;
 	queue<position> q;
@@ -101,11 +111,11 @@ void MyFormationBruteforcer::buildPathToPoints(xypoint targetTankCell, xypoint t
 				}
 			}
 
-			if (mPathIsEmpty || mCurrentFormationPath.size() > candidate.size())
+			if (mLandPathIsEmpty || mCurrentLandFormationPath.size() > candidate.size())
 			{
-				mPathIsEmpty = false;
-				mCurrentFormationPath = candidate;
-				mFinalFormation = finish;
+				mLandPathIsEmpty = false;
+				mCurrentLandFormationPath = candidate;
+				mFinalLandFormation = finish;
 			}
 			break;
 		}
@@ -144,6 +154,92 @@ void MyFormationBruteforcer::buildPathToPoints(xypoint targetTankCell, xypoint t
 			nxt.first += dr[k];
 			nxt.second += dc[k];
 			nxtpos = { t[0], t[1], nxt };
+			checkAndPush(nxt, nxtpos);
+		}
+	}
+}
+
+void MyFormationBruteforcer::buildAirPath()
+{
+	using position = vector<xypoint>;
+	queue<position> q;
+	map<position, position> parent;
+
+	const position start = { mFighterStartCell, mHelicopterStartCell };
+
+	const int dr[4] = { 0,0,1,-1 };
+	const int dc[4] = { 1,-1,0,0 };
+
+	q.push(start);
+	parent[start] = start;
+
+	while (!q.empty())
+	{
+		auto t = q.front();
+		q.pop();
+
+		if ((t[0] == mFinalLandFormation[0] || t[0] == mFinalLandFormation[1] || t[0] == mFinalLandFormation[2])
+			&& (t[1] == mFinalLandFormation[0] || t[1] == mFinalLandFormation[1] || t[1] == mFinalLandFormation[2]))
+		{
+			vector<FormationStep> candidate;
+
+			vector<position> moves;
+			while (t != start)
+			{
+				moves.push_back(t);
+				t = parent[t];
+			}
+			moves.push_back(start);
+			reverse(moves.begin(), moves.end());
+
+			for (int i = 1; i < moves.size(); ++i)
+			{
+				if (moves[i][0] != moves[i - 1][0])
+				{
+					candidate.push_back({ model::VehicleType::FIGHTER, moves[i - 1][0], moves[i][0] });
+				}
+				if (moves[i][1] != moves[i - 1][1])
+				{
+					candidate.push_back({ model::VehicleType::HELICOPTER, moves[i - 1][1], moves[i][1] });
+				}
+			}
+
+			if (mAirPathIsEmpty || mCurrentAirFormationPath.size() > candidate.size())
+			{
+				mAirPathIsEmpty = false;
+				mCurrentAirFormationPath = candidate;
+			}
+			break;
+		}
+
+		const auto checkAndPush = [&](const xypoint& nxt, const position& nxtpos)
+		{
+			if (nxt.first >= 0 && nxt.second >= 0 && nxt.first < 3 && nxt.second < 3 && !parent.count(nxtpos))
+			{
+				bool unq = true;
+				for (auto& x : t)
+					if (x == nxt)
+						unq = false;
+				if (unq)
+				{
+					parent[nxtpos] = t;
+					q.push(nxtpos);
+				}
+			}
+		};
+
+		for (int k = 0; k < 4; ++k)
+		{
+			xypoint nxt = t[0];
+			nxt.first += dr[k];
+			nxt.second += dc[k];
+			position nxtpos = { nxt, t[1] };
+			checkAndPush(nxt, nxtpos);
+
+			nxt = t[1];
+			nxt.first += dr[k];
+			nxt.second += dc[k];
+			nxtpos = { t[0], nxt };
 			checkAndPush(nxt, nxtpos);
 		}
 	}

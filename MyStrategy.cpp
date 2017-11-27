@@ -123,8 +123,10 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
 	const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
 	const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
+	const xypoint helicopter_center = getCenterOfGroup(VehicleType::HELICOPTER);
+	const xypoint fighterCenter = getCenterOfGroup(VehicleType::FIGHTER);
 
-	xypoint tankCell, ifvCell, arrvCell;
+	xypoint tankCell, ifvCell, arrvCell, fighterCell, helicopterCell;
 
 	tankCell.first = round((tankCenter.first - 45) / 75.0);
 	tankCell.second = round((tankCenter.second - 45) / 75.0);
@@ -132,14 +134,20 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	ifvCell.second = round((ifvCenter.second - 45) / 75.0);
 	arrvCell.first = round((arrvCenter.first - 45) / 75.0);
 	arrvCell.second = round((arrvCenter.second - 45) / 75.0);
+	fighterCell.first = round((fighterCenter.first - 45) / 75.0);
+	fighterCell.second = round((fighterCenter.second - 45) / 75.0);
+	helicopterCell.first = round((helicopter_center.first - 45) / 75.0);
+	helicopterCell.second = round((helicopter_center.second - 45) / 75.0);
 
-	auto mfb = MyFormationBruteforcer(tankCell, ifvCell, arrvCell);
+	auto mfb = MyFormationBruteforcer(tankCell, ifvCell, arrvCell, fighterCell, helicopterCell);
 	mfb.buildPathToFormation();
 
-	auto path = mfb.getFormationPath();
-	if (path.size())
+	auto doThePath = [&](const vector<FormationStep>& path, bool immStart)
 	{
 		vector<FormationStep> nowRunning;
+
+		if (immStart)
+			nowRunning.push_back({VehicleType::_UNKNOWN_, {-1, -1}, {-1, -1}});
 
 		const auto intersectionHandler = [&]
 		{
@@ -183,12 +191,17 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			nowRunning.push_back(turn);
 		}
 		intersectionHandler();
-	}
+	};
+
+	doThePath(mfb.getAirFormationPath(), false);
+	doThePath(mfb.getLandFormationPath(), true);
 
 	// 2.0 - radius
 	// dist btw units = 6
-	const bool horisontalFormation = mfb.getFormation()[0].second == mfb.getFormation()[1].second;
-	const int formationIndex = (horisontalFormation ? mfb.getFormation()[0].second : mfb.getFormation()[0].first);
+	const bool horisontalFormation = mfb.getLandFormation()[0].second == mfb.getLandFormation()[1].second;
+	const int formationIndex = (horisontalFormation ? mfb.getLandFormation()[0].second : mfb.getLandFormation()[0].first);
+
+
 
 	mDelayedFunctions.push_back({
 		allStopedFunc, [=](Move& move, const World& world)
@@ -196,8 +209,6 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
 			const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
 			const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
-			const xypoint fighterCenter = getCenterOfGroup(VehicleType::FIGHTER);
-			const xypoint helicopterCenter = getCenterOfGroup(VehicleType::HELICOPTER);
 
 			vector<double> targetShifts;
 
@@ -210,7 +221,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
 			{
 				move.setAction(ActionType::CLEAR_AND_SELECT);
-				move.setVehicleType(type);
+				//move.setVehicleType(type);
 				move.setTop(center.second + (j - 5) * 6);
 				move.setBottom(center.second + (j - 4) * 6);
 				move.setLeft(center.first - (1 + 5 * 6));
@@ -220,7 +231,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			const auto selectVerticallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
 			{
 				move.setAction(ActionType::CLEAR_AND_SELECT);
-				move.setVehicleType(type);
+				//move.setVehicleType(type);
 				move.setLeft(center.first + (j - 5) * 6);
 				move.setRight(center.first + (j - 4) * 6);
 				move.setTop(center.second - (1 + 5 * 6));
@@ -298,26 +309,6 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				else
 					theCenter.first += 75;
 			}
-			mExecutionQueue.push_back([=](Move& move, const World& world)
-			{
-				selectVehicles(VehicleType::FIGHTER, move);
-				pushToTheFrontOfQueue([=](Move& move, const World& world)
-				{
-					move.setAction(ActionType::MOVE);
-					move.setX(theCenter.first - fighterCenter.first + 30);
-					move.setY(theCenter.second - fighterCenter.second + 30);
-					pushToTheFrontOfQueue([=](Move& move, const World& world)
-					{
-						selectVehicles(VehicleType::HELICOPTER, move);
-						pushToTheFrontOfQueue([=](Move& move, const World& world)
-						{
-							move.setAction(ActionType::MOVE);
-							move.setX(theCenter.first - helicopterCenter.first - 20);
-							move.setY(theCenter.second - helicopterCenter.second - 20);
-						});
-					});
-				});
-			});
 
 			if (horisontalFormation) // * * *
 			{
