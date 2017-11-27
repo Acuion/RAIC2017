@@ -17,14 +17,14 @@ void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
 	mv.setVehicleType(vt);
 }
 
-bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::Move& move)
+bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 {
 	set<xypoint> nukePlaces;
 	map<xypoint, int> ptid;
 
 	for (auto& u : mGlobaler.getOurVehicles())
 	{
-		xypoint gridedPos = { round(u.second.mX / 4) * 4, round(u.second.mY / 4) * 4 };
+		xypoint gridedPos = {round(u.second.mX / 4) * 4, round(u.second.mY / 4) * 4};
 		double r = 0;
 		switch (u.second.mType)
 		{
@@ -51,12 +51,12 @@ bool MyStrategy::nukeEmAll(const Player& me, const model::World& world, model::M
 			for (int y = gridedPos.second - r; y <= gridedPos.second + r; y += 16)
 				if ((x - gridedPos.first) * (x - gridedPos.first) + (y - gridedPos.second) * (y - gridedPos.second) <= r * r)
 				{
-					nukePlaces.insert({ x, y });
+					nukePlaces.insert({x, y});
 					ptid[{x, y}] = u.first;
 				}
 	}
 
-	xypoint bestnp = { -1, -1 };
+	xypoint bestnp = {-1, -1};
 	double bestscore = -1e9;
 
 	for (auto& np : nukePlaces)
@@ -126,7 +126,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	selectTypeAndMakeGroup(VehicleType::FIGHTER);
 	selectTypeAndMakeGroup(VehicleType::HELICOPTER);
 
-	mMacroConditionalQueue.push_back({ [&](const World&) { return true; }, REFFHDR{ whenGroupsPrepared(move, world); } });
+	mMacroConditionalQueue.push_back({[&](const World&) { return true; }, REFFHDR { whenGroupsPrepared(move, world); }});
 }
 
 void MyStrategy::move(const Player& me, const World& world, const Game& game, Move& move)
@@ -155,7 +155,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			mMacroExecutionQueue.front()(move, world);
 			mMacroExecutionQueue.pop_front();
 		}
-		else
+		else //todo: the same priority? macro=local groups
 		{
 			if (!mGroupActors.size())
 				return;
@@ -172,7 +172,6 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			}
 		}
 	}
-
 }
 
 void MyStrategy::whenGroupsPrepared(Move& move, const World& world)
@@ -227,7 +226,7 @@ void MyStrategy::whenGroupsPrepared(Move& move, const World& world)
 		vector<FormationStep> nowRunning;
 
 		if (immStart)
-			nowRunning.push_back({ VehicleType::_UNKNOWN_,{ -1, -1 },{ -1, -1 } });
+			nowRunning.push_back({VehicleType::_UNKNOWN_,{-1, -1},{-1, -1}});
 
 		const auto intersectionHandler = [&]
 		{
@@ -252,15 +251,15 @@ void MyStrategy::whenGroupsPrepared(Move& move, const World& world)
 
 			double moveAngle = atan2(turn.mMoveTo.second - turn.mMoveFrom.second, turn.mMoveTo.first - turn.mMoveFrom.first);
 			mMacroConditionalQueue.push_back(make_pair(nowRunning.size() ? passFunc : allStopedFunc,
-				VALFHDR
-				{
-					dxypoint shift = { cos(moveAngle) * 75, sin(moveAngle) * 75 };
-					if (abs(shift.first) < 1e-6)
-						shift.first = 0;
-					if (abs(shift.first) < 1e-6)
-						shift.first = 0;
-					mUnitGroupsByType[turn.mVt]->move(shift, false);
-				}));
+		                                           VALFHDR
+			                                           {
+				                                           dxypoint shift = {cos(moveAngle) * 75, sin(moveAngle) * 75};
+				                                           if (abs(shift.first) < 1e-6)
+					                                           shift.first = 0;
+				                                           if (abs(shift.first) < 1e-6)
+					                                           shift.first = 0;
+				                                           mUnitGroupsByType[turn.mVt]->move(shift, false);
+			                                           }));
 
 			nowRunning.push_back(turn);
 		}
@@ -274,279 +273,279 @@ void MyStrategy::whenGroupsPrepared(Move& move, const World& world)
 	// dist btw units = 6
 	const bool horisontalFormation = mfb.getLandFormation()[0].second == mfb.getLandFormation()[1].second;
 	const int formationIndex = (horisontalFormation ? mfb.getLandFormation()[0].second : mfb.getLandFormation()[0].first);
-	/*
+
 	mMacroConditionalQueue.push_back({
 		allStopedFunc, VALFHDR
-	{
-		const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
-	const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
-	const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
-
-	vector<double> targetShifts;
-
-	const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
-	{
-		move.setAction(ActionType::CLEAR_AND_SELECT);
-		//move.setVehicleType(type);
-		move.setTop(center.second + (j - 5) * 6);
-		move.setBottom(center.second + (j - 4) * 6);
-		move.setLeft(center.first - (1 + 5 * 6));
-		move.setRight(center.first + (1 + 5 * 6));
-	};
-
-	const auto selectVerticallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
-	{
-		move.setAction(ActionType::CLEAR_AND_SELECT);
-		//move.setVehicleType(type);
-		move.setLeft(center.first + (j - 5) * 6);
-		move.setRight(center.first + (j - 4) * 6);
-		move.setTop(center.second - (1 + 5 * 6));
-		move.setBottom(center.second + (1 + 5 * 6));
-	};
-
-	const auto enqueueToFrontMoveVertOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
-	{
-		mMacroExecutionQueue.push_front(VALFHDR
 		{
-			move.setAction(ActionType::MOVE);
-		move.setY(targetShifts[j] + shift);
-		});
-		swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
-	};
+			const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
+			const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
+			const xypoint arrvCenter = getCenterOfGroup(VehicleType::ARRV);
 
-	const auto enqueueToFrontMoveHorisOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
-	{
-		mMacroExecutionQueue.push_front(VALFHDR
-		{
-			move.setAction(ActionType::MOVE);
-		move.setX(targetShifts[j] + shift);
-		});
-		swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
-	};
+			vector<double> targetShifts;
 
-	const auto processMovesWithShiftsVert = [=](vector<double> targetShifts, int j, int tankShift, int ifvShift,
-		int arrvShift)
-	{
-		mMacroExecutionQueue.push_back(VALFHDR
-		{
-			selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
-		enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, tankShift);
-		});
-		mMacroExecutionQueue.push_back(VALFHDR
-		{
-			selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
-		enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, ifvShift);
-		});
-		mMacroExecutionQueue.push_back(VALFHDR
-		{
-			selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
-		enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, arrvShift);
-		});
-	};
-
-	const auto processMovesWithShiftsHoris = [=](vector<double> targetShifts, int j, int tankShift, int ifvShift,
-		int arrvShift)
-	{
-		mMacroExecutionQueue.push_back(VALFHDR
-		{
-			selectVerticallyJthRow(move, tankCenter, j, VehicleType::TANK);
-		enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, tankShift);
-		});
-		mMacroExecutionQueue.push_back(VALFHDR
-		{
-			selectVerticallyJthRow(move, ifvCenter, j, VehicleType::IFV);
-		enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, ifvShift);
-		});
-		mMacroExecutionQueue.push_back(VALFHDR
-		{
-			selectVerticallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
-		enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, arrvShift);
-		});
-	};
-
-	xypoint theCenter = {
-		(tankCenter.first + ifvCenter.first + arrvCenter.first) / 3,
-		(tankCenter.second + ifvCenter.second + arrvCenter.second) / 3
-	};
-	if (formationIndex == 0)
-	{
-		if (horisontalFormation)
-			theCenter.second += 75;
-		else
-			theCenter.first += 75;
-	}
-
-	if (horisontalFormation) // * * *
-	{
-		switch (formationIndex)
-		{
-		case 0:
-			for (int i = 0; i < 10; ++i)
-				targetShifts.push_back(12 * i);
-			for (int j = 9; j >= 0; --j)
+			const auto selectHorisontallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
 			{
-				processMovesWithShiftsVert(targetShifts, j, 0, 6, 12);
-			}
-			break;
-		case 1:
-		case 2:
-			for (int i = 0; i < 5; ++i)
-				targetShifts.push_back(-6 - 12 * (4 - i));
-			for (int i = 0; i < 5; ++i)
-				targetShifts.push_back(6 + 12 * i);
-			for (int j = 0; j < 5; ++j)
+				move.setAction(ActionType::CLEAR_AND_SELECT);
+				//move.setVehicleType(type);
+				move.setTop(center.second + (j - 5) * 6);
+				move.setBottom(center.second + (j - 4) * 6);
+				move.setLeft(center.first - (1 + 5 * 6));
+				move.setRight(center.first + (1 + 5 * 6));
+			};
+
+			const auto selectVerticallyJthRow = [=](Move& move, xypoint center, int j, VehicleType type)
 			{
-				processMovesWithShiftsVert(targetShifts, j, 0, -6, -12);
-			}
-			for (int j = 9; j >= 5; --j)
+				move.setAction(ActionType::CLEAR_AND_SELECT);
+				//move.setVehicleType(type);
+				move.setLeft(center.first + (j - 5) * 6);
+				move.setRight(center.first + (j - 4) * 6);
+				move.setTop(center.second - (1 + 5 * 6));
+				move.setBottom(center.second + (1 + 5 * 6));
+			};
+
+			const auto enqueueToFrontMoveVertOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
 			{
-				processMovesWithShiftsVert(targetShifts, j, 0, 6, 12);
-			}
-			break;
-		default:
-			throw;
-		}
-		mMacroConditionalQueue.push_back({
-			allStopedFunc, VALFHDR
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setLeft(0);
-			move.setRight(45 + 50);
-			move.setTop(0);
-			move.setBottom(1024);
-			pushToTheFrontOfQueue(VALFHDR
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(75);
-				pushToTheFrontOfQueue(VALFHDR
+				mMacroExecutionQueue.push_front(VALFHDR
 				{
-					move.setAction(ActionType::CLEAR_AND_SELECT);
-					move.setLeft(160);
-					move.setRight(1024);
-					move.setTop(0);
-					move.setBottom(1024);
-					pushToTheFrontOfQueue(VALFHDR
+					move.setAction(ActionType::MOVE);
+					move.setY(targetShifts[j] + shift);
+				});
+				swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
+			};
+
+			const auto enqueueToFrontMoveHorisOnJthShiftWithShift = [=](vector<double> targetShifts, int j, int shift)
+			{
+				mMacroExecutionQueue.push_front(VALFHDR
+				{
+					move.setAction(ActionType::MOVE);
+					move.setX(targetShifts[j] + shift);
+				});
+				swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
+			};
+
+			const auto processMovesWithShiftsVert = [=](vector<double> targetShifts, int j, int tankShift, int ifvShift,
+			                                            int arrvShift)
+			{
+				mMacroExecutionQueue.push_back(VALFHDR
+				{
+					selectHorisontallyJthRow(move, tankCenter, j, VehicleType::TANK);
+					enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, tankShift);
+				});
+				mMacroExecutionQueue.push_back(VALFHDR
+				{
+					selectHorisontallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+					enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, ifvShift);
+				});
+				mMacroExecutionQueue.push_back(VALFHDR
+				{
+					selectHorisontallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+					enqueueToFrontMoveVertOnJthShiftWithShift(targetShifts, j, arrvShift);
+				});
+			};
+
+			const auto processMovesWithShiftsHoris = [=](vector<double> targetShifts, int j, int tankShift, int ifvShift,
+			                                             int arrvShift)
+			{
+				mMacroExecutionQueue.push_back(VALFHDR
+				{
+					selectVerticallyJthRow(move, tankCenter, j, VehicleType::TANK);
+					enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, tankShift);
+				});
+				mMacroExecutionQueue.push_back(VALFHDR
+				{
+					selectVerticallyJthRow(move, ifvCenter, j, VehicleType::IFV);
+					enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, ifvShift);
+				});
+				mMacroExecutionQueue.push_back(VALFHDR
+				{
+					selectVerticallyJthRow(move, arrvCenter, j, VehicleType::ARRV);
+					enqueueToFrontMoveHorisOnJthShiftWithShift(targetShifts, j, arrvShift);
+				});
+			};
+
+			xypoint theCenter = {
+				(tankCenter.first + ifvCenter.first + arrvCenter.first) / 3,
+				(tankCenter.second + ifvCenter.second + arrvCenter.second) / 3
+			};
+			if (formationIndex == 0)
+			{
+				if (horisontalFormation)
+					theCenter.second += 75;
+				else
+					theCenter.first += 75;
+			}
+
+			if (horisontalFormation) // * * *
+			{
+				switch (formationIndex)
+				{
+				case 0:
+					for (int i = 0; i < 10; ++i)
+						targetShifts.push_back(12 * i);
+					for (int j = 9; j >= 0; --j)
 					{
-						move.setAction(ActionType::MOVE);
-						move.setX(-75);
+						processMovesWithShiftsVert(targetShifts, j, 0, 6, 12);
+					}
+					break;
+				case 1:
+				case 2:
+					for (int i = 0; i < 5; ++i)
+						targetShifts.push_back(-6 - 12 * (4 - i));
+					for (int i = 0; i < 5; ++i)
+						targetShifts.push_back(6 + 12 * i);
+					for (int j = 0; j < 5; ++j)
+					{
+						processMovesWithShiftsVert(targetShifts, j, 0, -6, -12);
+					}
+					for (int j = 9; j >= 5; --j)
+					{
+						processMovesWithShiftsVert(targetShifts, j, 0, 6, 12);
+					}
+					break;
+				default:
+					throw;
+				}
+				mMacroConditionalQueue.push_back({
+					allStopedFunc, VALFHDR
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setLeft(0);
+						move.setRight(45 + 50);
+						move.setTop(0);
+						move.setBottom(1024);
 						pushToTheFrontOfQueue(VALFHDR
 						{
-							move.setAction(ActionType::CLEAR_AND_SELECT);
-							move.setTop(0);
-							move.setBottom(1024);
-							move.setLeft(0);
-							move.setRight(1024);
+							move.setAction(ActionType::MOVE);
+							move.setX(75);
+							pushToTheFrontOfQueue(VALFHDR
+							{
+								move.setAction(ActionType::CLEAR_AND_SELECT);
+								move.setLeft(160);
+								move.setRight(1024);
+								move.setTop(0);
+								move.setBottom(1024);
+								pushToTheFrontOfQueue(VALFHDR
+								{
+									move.setAction(ActionType::MOVE);
+									move.setX(-75);
+									pushToTheFrontOfQueue(VALFHDR
+									{
+										move.setAction(ActionType::CLEAR_AND_SELECT);
+										move.setTop(0);
+										move.setBottom(1024);
+										move.setLeft(0);
+										move.setRight(1024);
+									});
+								});
+							});
 						});
-					});
+					}
 				});
+			}
+			else
+			{
+				switch (formationIndex)
+				{
+				case 0:
+					for (int i = 0; i < 10; ++i)
+						targetShifts.push_back(12 * i);
+					for (int j = 9; j >= 0; --j)
+					{
+						processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
+					}
+					break;
+				case 1:
+				case 2:
+					for (int i = 0; i < 5; ++i)
+						targetShifts.push_back(-6 - 12 * (4 - i));
+					for (int i = 0; i < 5; ++i)
+						targetShifts.push_back(6 + 12 * i);
+					for (int j = 0; j < 5; ++j)
+					{
+						processMovesWithShiftsHoris(targetShifts, j, 0, -6, -12);
+					}
+					for (int j = 9; j >= 5; --j)
+					{
+						processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
+					}
+					break;
+				default:
+					throw;
+				}
+
+				mMacroConditionalQueue.push_back({
+					allStopedFunc, VALFHDR
+					{
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setTop(0);
+						move.setBottom(45 + 50);
+						move.setLeft(0);
+						move.setRight(1024);
+						pushToTheFrontOfQueue(VALFHDR
+						{
+							move.setAction(ActionType::MOVE);
+							move.setY(75);
+							pushToTheFrontOfQueue(VALFHDR
+							{
+								move.setAction(ActionType::CLEAR_AND_SELECT);
+								move.setTop(160);
+								move.setBottom(1024);
+								move.setLeft(0);
+								move.setRight(1024);
+								pushToTheFrontOfQueue(VALFHDR
+								{
+									move.setAction(ActionType::MOVE);
+									move.setY(-75);
+									pushToTheFrontOfQueue(VALFHDR
+									{
+										move.setAction(ActionType::CLEAR_AND_SELECT);
+										move.setTop(0);
+										move.setBottom(1024);
+										move.setLeft(0);
+										move.setRight(1024);
+									});
+								});
+							});
+						});
+					}
+				});
+			}
+
+			mMacroConditionalQueue.push_back({
+				allStopedFunc, VALFHDR
+				{
+					move.setAction(ActionType::ROTATE);
+					move.setX(theCenter.first);
+					move.setY(theCenter.second);
+					if (horisontalFormation)
+						move.setAngle(PI / 4);
+					else
+						move.setAngle(-PI / 4);
+				}
 			});
-			}
-		});
-	}
-	else
-	{
-		switch (formationIndex)
-		{
-		case 0:
-			for (int i = 0; i < 10; ++i)
-				targetShifts.push_back(12 * i);
-			for (int j = 9; j >= 0; --j)
-			{
-				processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
-			}
-			break;
-		case 1:
-		case 2:
-			for (int i = 0; i < 5; ++i)
-				targetShifts.push_back(-6 - 12 * (4 - i));
-			for (int i = 0; i < 5; ++i)
-				targetShifts.push_back(6 + 12 * i);
-			for (int j = 0; j < 5; ++j)
-			{
-				processMovesWithShiftsHoris(targetShifts, j, 0, -6, -12);
-			}
-			for (int j = 9; j >= 5; --j)
-			{
-				processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
-			}
-			break;
-		default:
-			throw;
+			mMacroConditionalQueue.push_back({
+				allStopedFunc, VALFHDR
+				{
+					move.setAction(ActionType::SCALE);
+					move.setX(theCenter.first);
+					move.setY(theCenter.second);
+					move.setFactor(0.2);
+				}
+			});
+			mMacroConditionalQueue.push_back({allStopedFunc, mInfinityChase});
 		}
-
-		mMacroConditionalQueue.push_back({
-			allStopedFunc, VALFHDR
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-		move.setTop(0);
-		move.setBottom(45 + 50);
-		move.setLeft(0);
-		move.setRight(1024);
-		pushToTheFrontOfQueue(VALFHDR
-		{
-			move.setAction(ActionType::MOVE);
-		move.setY(75);
-		pushToTheFrontOfQueue(VALFHDR
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-		move.setTop(160);
-		move.setBottom(1024);
-		move.setLeft(0);
-		move.setRight(1024);
-		pushToTheFrontOfQueue(VALFHDR
-		{
-			move.setAction(ActionType::MOVE);
-		move.setY(-75);
-		pushToTheFrontOfQueue(VALFHDR
-		{
-			move.setAction(ActionType::CLEAR_AND_SELECT);
-		move.setTop(0);
-		move.setBottom(1024);
-		move.setLeft(0);
-		move.setRight(1024);
-		});
-		});
-		});
-		});
-		}
-		});
-	}
-
-	mMacroConditionalQueue.push_back({
-		allStopedFunc, VALFHDR
-	{
-		move.setAction(ActionType::ROTATE);
-	move.setX(theCenter.first);
-	move.setY(theCenter.second);
-	if (horisontalFormation)
-		move.setAngle(PI / 4);
-	else
-		move.setAngle(-PI / 4);
-	}
 	});
-	mMacroConditionalQueue.push_back({
-		allStopedFunc, VALFHDR
-	{
-		move.setAction(ActionType::SCALE);
-	move.setX(theCenter.first);
-	move.setY(theCenter.second);
-	move.setFactor(0.2);
-	}
-	});
-	mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChase });
-	}
-	});*/
 }
 
 MyStrategy::MyStrategy()
 	: mPanic(false)
-	, mLastNuke(-10000)
+	  , mLastNuke(-10000)
 {
 	mInfinityChase = VALFHDR
 	{
-		if (!mPanic) // todo: move panic to the main
+		if (!mPanic) // todo: panic in the macro
 		{
-			xypoint theCenter = { 0,0 };
+			xypoint theCenter = {0,0};
 			for (auto& x : mGlobaler.getOurVehicles())
 			{
 				theCenter.first += x.second.mX;
@@ -555,7 +554,7 @@ MyStrategy::MyStrategy()
 			theCenter.first /= mGlobaler.getOurVehicles().size();
 			theCenter.second /= mGlobaler.getOurVehicles().size();
 
-			xypoint nearest = { 512, 512 };
+			xypoint nearest = {512, 512};
 			double currDist = 1e9;
 			for (auto& x : mGlobaler.getEnemyVehicles())
 			{
@@ -563,7 +562,7 @@ MyStrategy::MyStrategy()
 					(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
 				if (dist < currDist)
 				{
-					nearest = { x.second.mX, x.second.mY };
+					nearest = {x.second.mX, x.second.mY};
 					currDist = dist;
 				}
 			}
@@ -584,20 +583,30 @@ MyStrategy::MyStrategy()
 				}
 			}
 
-			double disttonuke1 = sqrt((world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) +
-				(world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second));
-			double disttonuke2 = sqrt((world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) +
-				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second));
+			double disttonuke1 = sqrt(
+				(world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getMyPlayer().getNextNuclearStrikeX() -
+					theCenter.first) +
+				(world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getMyPlayer().getNextNuclearStrikeY() -
+					theCenter.second));
+			double disttonuke2 = sqrt(
+				(world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().
+				                                                                               getNextNuclearStrikeX() - theCenter.
+					first) +
+				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().
+				                                                                                getNextNuclearStrikeY() - theCenter.
+					second));
 
 			if (disttonuke2 < 110 && world.getOpponentPlayer().getNextNuclearStrikeX() >= 0)
 			{
 				mPanic = true;
-				mPanicPoint = { world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY() };
+				mPanicPoint = {
+					world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY()
+				};
 			}
 			else if (disttonuke1 < 110 && world.getMyPlayer().getNextNuclearStrikeX() >= 0)
 			{
 				mPanic = true;
-				mPanicPoint = { world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY() };
+				mPanicPoint = {world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY()};
 			}
 			if (mPanic)
 			{
