@@ -118,19 +118,96 @@ bool MyStrategy::macroMayBeInterrupted()
 	return !mDoNotInterruptMacroPlease;
 }
 
-bool MyStrategy::nukePanic(Move& move)
+bool MyStrategy::nukePanic(Move& move, const World& world)
 {
-	// todo: store selection!
+	if (!mPanic)
+	{
+		xypoint theCenter = { 0,0 };
+		for (auto& x : mGlobaler.getOurVehicles())
+		{
+			theCenter.first += x.second.mX;
+			theCenter.second += x.second.mY;
+		}
+		theCenter.first /= mGlobaler.getOurVehicles().size();
+		theCenter.second /= mGlobaler.getOurVehicles().size();
+
+		double disttonuke1 = sqrt(
+			(world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getMyPlayer().getNextNuclearStrikeX() -
+				theCenter.first) +
+				(world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getMyPlayer().getNextNuclearStrikeY() -
+					theCenter.second));
+		double disttonuke2 = sqrt(
+			(world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().
+				getNextNuclearStrikeX() - theCenter.
+				first) +
+				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().
+					getNextNuclearStrikeY() - theCenter.
+					second));
+
+		if (disttonuke2 < 110 && world.getOpponentPlayer().getNextNuclearStrikeX() >= 0)
+		{
+			mPanic = true;
+			mPanicPoint = {
+				world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY()
+			};
+		}
+		else if (disttonuke1 < 110 && world.getMyPlayer().getNextNuclearStrikeX() >= 0)
+		{
+			mPanic = true;
+			mPanicPoint = { world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY() };
+		}
+		if (mPanic)
+		{
+			mPanicTime = world.getTickIndex();
+		}
+	}
+	if (mPanic)
+	{
+		if (mPanicSelection)
+		{
+			if (world.getTickIndex() - mPanicTime <= 30)
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(mPanicPoint.first);
+				move.setY(mPanicPoint.second);
+				move.setFactor(10);
+			}
+			else if (world.getTickIndex() - mPanicTime <= 60)
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(mPanicPoint.first);
+				move.setY(mPanicPoint.second);
+				move.setFactor(0.1);
+			}
+			else
+			{
+				mPanicSelection = mPanic = false;
+			}
+		}
+		else
+		{
+			move.setAction(ActionType::CLEAR_AND_SELECT);
+			move.setRight(1024);
+			move.setBottom(1024);
+			mPanicSelection = true;
+		}
+	}
+	return mPanic;
+	// todo: store selection! (or not, xm)
 	// calculate groups AABB
 	// select groups near the nuke
 	// scale out
 	// scale in
-	// restore selection!
-	return false;
+	// restore selection! (or not, xm)
 }
 
 void MyStrategy::firstTickActions(const Player& me, const World& world, const Game& game, Move& move)
 {
+	if (world.getFacilities().size())
+		mGameMode = GameMode::Round2;
+	else
+		mGameMode = GameMode::Round1;
+
 	const auto getCenterOfGroup = [&](VehicleType vt)
 	{
 		double x = 0, y = 0, count = 0;
@@ -490,7 +567,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			move.setFactor(0.2);
 		}
 		});
-		mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChase });
+		mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound1 });
 	}
 	});
 }
@@ -522,7 +599,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 				mayBeInterrupted = mGroupActors[mCurrActingGroup]->mayBeInterrupted();
 			}
 
-			if (mayBeInterrupted && nukePanic(move))
+			if (mayBeInterrupted && nukePanic(move, world))
 				return; // todo: move somewhere else?
 
 			if (mCurrActingGroup == mGroupActors.size()) // macro actions
@@ -558,102 +635,51 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 
 MyStrategy::MyStrategy()
 	: mPanic(false)
+	, mPanicSelection(false)
 	, mLastNuke(-10000)
+	, mDoNotInterruptMacroPlease(false)
 	, mCurrActingGroup(0)
 	, mThisGroupActedTimes(0)
-	, mDoNotInterruptMacroPlease(false)
 {
-	mInfinityChase = VALFHDR
+	mInfinityChaseRound1 = VALFHDR
 	{
-		if (!mPanic)
+		xypoint theCenter = {0,0};
+		for (auto& x : mGlobaler.getOurVehicles())
 		{
-			xypoint theCenter = {0,0};
-			for (auto& x : mGlobaler.getOurVehicles())
-			{
-				theCenter.first += x.second.mX;
-				theCenter.second += x.second.mY;
-			}
-			theCenter.first /= mGlobaler.getOurVehicles().size();
-			theCenter.second /= mGlobaler.getOurVehicles().size();
+			theCenter.first += x.second.mX;
+			theCenter.second += x.second.mY;
+		}
+		theCenter.first /= mGlobaler.getOurVehicles().size();
+		theCenter.second /= mGlobaler.getOurVehicles().size();
 
-			xypoint nearest = {512, 512};
-			double currDist = 1e9;
-			for (auto& x : mGlobaler.getEnemyVehicles())
+		xypoint nearest = {512, 512};
+		double currDist = 1e9;
+		for (auto& x : mGlobaler.getEnemyVehicles())
+		{
+			double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
+				(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
+			if (dist < currDist)
 			{
-				double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
-					(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
-				if (dist < currDist)
-				{
-					nearest = {x.second.mX, x.second.mY};
-					currDist = dist;
-				}
-			}
-
-			if (world.getTickIndex() - mLastNuke > 30)
-			{
-				move.setAction(ActionType::MOVE);
-				move.setX(nearest.first - theCenter.first);
-				move.setY(nearest.second - theCenter.second);
-				move.setMaxSpeed(0.18);
-				if (abs(move.getX()) < 32 && abs(move.getY()) < 32 && world.getTickIndex() % 10)
-				{
-					move.setAction(ActionType::SCALE);
-					move.setX(theCenter.first + 12);
-					move.setY(theCenter.second + 12);
-					move.setFactor(0.91);
-					move.setMaxSpeed(0.15);
-				}
-			}
-
-			double disttonuke1 = sqrt(
-				(world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getMyPlayer().getNextNuclearStrikeX() -
-					theCenter.first) +
-				(world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getMyPlayer().getNextNuclearStrikeY() -
-					theCenter.second));
-			double disttonuke2 = sqrt(
-				(world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().
-				                                                                               getNextNuclearStrikeX() - theCenter.
-					first) +
-				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().
-				                                                                                getNextNuclearStrikeY() - theCenter.
-					second));
-
-			if (disttonuke2 < 110 && world.getOpponentPlayer().getNextNuclearStrikeX() >= 0)
-			{
-				mPanic = true;
-				mPanicPoint = {
-					world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY()
-				};
-			}
-			else if (disttonuke1 < 110 && world.getMyPlayer().getNextNuclearStrikeX() >= 0)
-			{
-				mPanic = true;
-				mPanicPoint = {world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY()};
-			}
-			if (mPanic)
-			{
-				mPanicTime = world.getTickIndex();
+				nearest = {x.second.mX, x.second.mY};
+				currDist = dist;
 			}
 		}
-		if (mPanic)
+
+		if (world.getTickIndex() - mLastNuke > 30)
 		{
-			if (world.getTickIndex() - mPanicTime <= 30)
+			move.setAction(ActionType::MOVE);
+			move.setX(nearest.first - theCenter.first);
+			move.setY(nearest.second - theCenter.second);
+			move.setMaxSpeed(0.18);
+			if (abs(move.getX()) < 32 && abs(move.getY()) < 32 && world.getTickIndex() % 10)
 			{
 				move.setAction(ActionType::SCALE);
-				move.setX(mPanicPoint.first);
-				move.setY(mPanicPoint.second);
-				move.setFactor(10);
+				move.setX(theCenter.first + 12);
+				move.setY(theCenter.second + 12);
+				move.setFactor(0.91);
+				move.setMaxSpeed(0.15);
 			}
-			else if (world.getTickIndex() - mPanicTime <= 60)
-			{
-				move.setAction(ActionType::SCALE);
-				move.setX(mPanicPoint.first);
-				move.setY(mPanicPoint.second);
-				move.setFactor(0.1);
-			}
-			else
-				mPanic = false;
 		}
-		mMacroExecutionQueue.push_back(mInfinityChase);
+		mMacroExecutionQueue.push_back(mInfinityChaseRound1);
 	};
 }

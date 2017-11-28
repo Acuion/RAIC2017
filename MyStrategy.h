@@ -36,13 +36,13 @@ private:
 	void unlockMacroInterruptions();
 	bool macroMayBeInterrupted();
 
-	bool nukePanic(Move& move);
+	bool nukePanic(Move& move, const World& world);
 
-	bool mPanic;
+	bool mPanic, mPanicSelection;
 	int mPanicTime;
 	xypoint mPanicPoint;
 	int mLastNuke;
-	turnPrototype mInfinityChase;
+	turnPrototype mInfinityChaseRound1;
 
 	bool mDoNotInterruptMacroPlease;
 	deque<turnPrototype> mMacroExecutionQueue;
@@ -53,6 +53,14 @@ private:
 	vector<shared_ptr<MyUnitGroup>> mGroupActors;
 	int mCurrActingGroup;
 	int mThisGroupActedTimes;
+
+	enum class GameMode
+	{
+		Round1,
+		Round2,
+		Final
+	};
+	GameMode mGameMode;
 };
 
 #endif
