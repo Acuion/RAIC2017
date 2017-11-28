@@ -55,6 +55,21 @@ void MyUnitGroup::pushToConditionalQueue(pair<CondQueueCondition, function<void(
 	mConditionalQueue.push_back(func);
 }
 
+void MyUnitGroup::lockInterrupts()
+{
+	mDoNotInterruptPlease = true;
+}
+
+void MyUnitGroup::unlockInterrupts()
+{
+	mDoNotInterruptPlease = false;
+}
+
+bool MyUnitGroup::mayBeInterrupted()
+{
+	return !mDoNotInterruptPlease;
+}
+
 void MyUnitGroup::move(dxypoint vector, bool saveFormation)
 {
 	if (saveFormation)
@@ -107,6 +122,30 @@ void MyUnitGroup::forcedSelect(Move& move)
 	sCurrentlySelectedGroup = mGroupNumber;
 }
 
+void MyUnitGroup::appendGroup(shared_ptr<MyUnitGroup> group, Move& move)
+{
+	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+	{
+		lockInterrupts();
+		group->forcedSelect(move);
+		mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+		{
+			for (auto& x : mGlobaler.getSelectedAllies())
+				mIngroupIds.insert(x);
+			move.setAction(ActionType::ASSIGN);
+			move.setGroup(mGroupNumber);
+			unlockInterrupts();
+		}
+		});
+	}
+	});
+}
+
+const set<int>& MyUnitGroup::getGroupIdList()
+{
+	return mIngroupIds;
+}
+
 bool MyUnitGroup::moving() const
 {
 	bool allStopped = true;
@@ -134,6 +173,7 @@ xypoint MyUnitGroup::getCenterOfGroup() const
 
 MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler) // will assign (takes 1 turn)
 	: mGlobaler(globaler)
+	, mDoNotInterruptPlease(false)
 {
 	mGroupNumber = ++sGroupsCount;
 

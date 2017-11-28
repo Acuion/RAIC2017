@@ -30,7 +30,11 @@ private:
 	void firstTickActions(const Player& me, const World& world, const Game& game, Move& move);
 	void selectVehicles(VehicleType vt, Move& mv);
 	bool nukeEmAll(const Player& me, const model::World& world, model::Move& move);
-	shared_ptr<MyUnitGroup> createGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler);
+	shared_ptr<MyUnitGroup> createGroup(Move& move, const World& world);
+
+	void lockMacroInterruptions();
+	void unlockMacroInterruptions();
+	bool macroMayBeInterrupted();
 
 	bool mPanic;
 	int mPanicTime;
@@ -38,6 +42,7 @@ private:
 	int mLastNuke;
 	turnPrototype mInfinityChase;
 
+	bool mDoNotInterruptMacroPlease;
 	deque<turnPrototype> mMacroExecutionQueue;
 	deque<pair<function<bool(const World&)>, turnPrototype>> mMacroConditionalQueue;
 

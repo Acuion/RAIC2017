@@ -96,11 +96,26 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 	return false;
 }
 
-shared_ptr<MyUnitGroup> MyStrategy::createGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler)
+shared_ptr<MyUnitGroup> MyStrategy::createGroup(Move& move, const World& world)
 {
-	auto sp = make_shared<MyUnitGroup>(move, world, globaler);
+	auto sp = make_shared<MyUnitGroup>(move, world, mGlobaler);
 	mGroupActors.push_back(sp);
 	return sp;
+}
+
+void MyStrategy::lockMacroInterruptions()
+{
+	mDoNotInterruptMacroPlease = true;
+}
+
+void MyStrategy::unlockMacroInterruptions()
+{
+	mDoNotInterruptMacroPlease = false;
+}
+
+bool MyStrategy::macroMayBeInterrupted()
+{
+	return !mDoNotInterruptMacroPlease;
 }
 
 void MyStrategy::firstTickActions(const Player& me, const World& world, const Game& game, Move& move)
@@ -398,7 +413,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 				}
 				for (int j = 9; j >= 5; --j)
 				{
-					processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
+				processMovesWithShiftsHoris(targetShifts, j, 0, 6, 12);
 				}
 				break;
 			default:
@@ -477,41 +492,45 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	if (world.getTickIndex() == 0)
 		firstTickActions(me, world, game, move);
 
-	if (!mMacroExecutionQueue.size() && mMacroConditionalQueue.size())
-		if (mMacroConditionalQueue.front().first(world))
-		{
-			mMacroExecutionQueue.push_back(mMacroConditionalQueue.front().second);
-			mMacroConditionalQueue.pop_front();
-		}
-
 	if (world.getTickIndex() % 5 == 0)
 	{
 		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
 			return;
 
-		if (mMacroExecutionQueue.size())
+		int startedFrom = mCurrActingGroup;
+		while (true)
 		{
-			mMacroExecutionQueue.front()(move, world);
-			mMacroExecutionQueue.pop_front();
-		}
-		else
-		{
-			if (!mGroupActors.size())
-				return;
-			int startedFrom = mCurrActingGroup;
-
-			while (true)
+			bool moved = false;
+			bool mayBeInterrupted = false;
+			if (mCurrActingGroup == mGroupActors.size()) // macro actions
 			{
-				bool moved = mGroupActors[mCurrActingGroup]->act(move, world);
-				mThisGroupActedTimes++;
-				if (!moved || mThisGroupActedTimes == 2)
+				if (!mMacroExecutionQueue.size() && mMacroConditionalQueue.size())
+					if (mMacroConditionalQueue.front().first(world))
+					{
+						mMacroExecutionQueue.push_back(mMacroConditionalQueue.front().second);
+						mMacroConditionalQueue.pop_front();
+					}
+				if (mMacroExecutionQueue.size())
 				{
-					mThisGroupActedTimes = 0;
-					mCurrActingGroup = (mCurrActingGroup + 1) % mGroupActors.size();
+					mMacroExecutionQueue.front()(move, world);
+					mMacroExecutionQueue.pop_front();
+					moved = true;
 				}
-				if (moved || mCurrActingGroup == startedFrom)
-					break;
+				mayBeInterrupted = macroMayBeInterrupted();
 			}
+			else
+			{
+				moved = mGroupActors[mCurrActingGroup]->act(move, world);
+				mayBeInterrupted = mGroupActors[mCurrActingGroup]->mayBeInterrupted();
+			}
+			mThisGroupActedTimes++;
+			if (mayBeInterrupted && (!moved || mThisGroupActedTimes >= 2))
+			{
+				mThisGroupActedTimes = 0;
+				mCurrActingGroup = (mCurrActingGroup + 1) % (mGroupActors.size() + 1);
+			}
+			if (moved || mCurrActingGroup == startedFrom)
+				break;
 		}
 	}
 }
@@ -521,10 +540,11 @@ MyStrategy::MyStrategy()
 	, mLastNuke(-10000)
 	, mCurrActingGroup(0)
 	, mThisGroupActedTimes(0)
+	, mDoNotInterruptMacroPlease(false)
 {
 	mInfinityChase = VALFHDR
 	{
-		if (!mPanic) // todo: panic in the macro
+		if (!mPanic)
 		{
 			xypoint theCenter = {0,0};
 			for (auto& x : mGlobaler.getOurVehicles())
