@@ -42,7 +42,9 @@ private:
 	int mPanicTime;
 	xypoint mPanicPoint;
 	int mLastNuke;
-	turnPrototype mInfinityChaseRound1;
+	turnPrototype mInfinityChaseRound1, mInfinityChaseRound2;
+
+	shared_ptr<MyUnitGroup> mGroup1, mGroup2;
 
 	bool mDoNotInterruptMacroPlease;
 	deque<turnPrototype> mMacroExecutionQueue;

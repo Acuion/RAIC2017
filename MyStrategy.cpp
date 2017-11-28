@@ -203,6 +203,8 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 
 void MyStrategy::firstTickActions(const Player& me, const World& world, const Game& game, Move& move)
 {
+	lockMacroInterruptions(); // !!!!!
+
 	if (world.getFacilities().size())
 		mGameMode = GameMode::Round2;
 	else
@@ -546,28 +548,86 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			});
 		}
 
-		mMacroConditionalQueue.push_back({
-			allStopedFunc, VALFHDR
+		auto finishCreation = [=]
 		{
-			move.setAction(ActionType::ROTATE);
-			move.setX(theCenter.first);
-			move.setY(theCenter.second);
-			if (horisontalFormation)
-				move.setAngle(PI / 4);
+			mMacroConditionalQueue.push_back({
+				allStopedFunc, VALFHDR
+			{
+				move.setAction(ActionType::ROTATE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				if (horisontalFormation)
+					move.setAngle(PI / 4);
+				else
+					move.setAngle(-PI / 4);
+			}
+			});
+			mMacroConditionalQueue.push_back({
+				allStopedFunc, VALFHDR
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				move.setFactor(0.2);
+				unlockMacroInterruptions(); // !!!!
+			}
+			});
+			if (mGameMode == GameMode::Round1)
+				mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound1 });
 			else
-				move.setAngle(-PI / 4);
-		}
-		});
-		mMacroConditionalQueue.push_back({
-			allStopedFunc, VALFHDR
+				mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound2 });
+		};
+
+		if (mGameMode == GameMode::Round2)
 		{
-			move.setAction(ActionType::SCALE);
-			move.setX(theCenter.first);
-			move.setY(theCenter.second);
-			move.setFactor(0.2);
+			mMacroConditionalQueue.push_back({
+				allStopedFunc, VALFHDR
+			{
+				if (!horisontalFormation)
+				{
+					move.setAction(ActionType::CLEAR_AND_SELECT);
+					move.setRight(theCenter.first);
+					move.setBottom(1024);
+					pushToTheFrontOfQueue(VALFHDR
+					{
+						mGroup1 = createGroup(move, world);
+						pushToTheFrontOfQueue(VALFHDR
+						{
+							move.setAction(ActionType::CLEAR_AND_SELECT);
+							move.setLeft(theCenter.first);
+							move.setBottom(1024);
+							pushToTheFrontOfQueue(VALFHDR
+							{
+								mGroup2 = createGroup(move, world);
+								finishCreation();
+							});
+						});
+					});
+				}
+				else
+				{
+					move.setAction(ActionType::CLEAR_AND_SELECT);
+					move.setBottom(theCenter.first);
+					move.setRight(1024);
+					pushToTheFrontOfQueue(VALFHDR
+					{
+						mGroup1 = createGroup(move, world);
+						pushToTheFrontOfQueue(VALFHDR
+						{
+							move.setAction(ActionType::CLEAR_AND_SELECT);
+							move.setTop(theCenter.first);
+							move.setRight(1024);
+							pushToTheFrontOfQueue(VALFHDR
+							{
+								mGroup2 = createGroup(move, world);
+								finishCreation();
+							});
+						});
+					});
+				}
+			}
+			});
 		}
-		});
-		mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound1 });
 	}
 	});
 }
@@ -582,14 +642,14 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 
 	if (world.getTickIndex() % 5 == 0)
 	{
-		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
-			return;
+		//if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
+		//	return;
 			
 		int startedFrom = mCurrActingGroup;
 		while (true)
 		{
 			bool moved = false;
-			bool mayBeInterrupted = false;
+			bool mayBeInterrupted;
 			if (mCurrActingGroup == mGroupActors.size()) // macro actions
 			{
 				mayBeInterrupted = macroMayBeInterrupted();
@@ -681,5 +741,12 @@ MyStrategy::MyStrategy()
 			}
 		}
 		mMacroExecutionQueue.push_back(mInfinityChaseRound1);
+	};
+	mInfinityChaseRound2 = VALFHDR
+	{
+		mGroup1->move({0, 50}, false);
+		mGroup2->move({50, 0}, false);
+
+		mMacroExecutionQueue.push_back(mInfinityChaseRound2);
 	};
 }
