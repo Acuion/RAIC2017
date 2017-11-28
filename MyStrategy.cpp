@@ -507,15 +507,24 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	{
 		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
 			return;
-
-		if (nukePanic(move))
-			return; // todo: move somewhere else?
-
+			
 		int startedFrom = mCurrActingGroup;
 		while (true)
 		{
 			bool moved = false;
 			bool mayBeInterrupted = false;
+			if (mCurrActingGroup == mGroupActors.size()) // macro actions
+			{
+				mayBeInterrupted = macroMayBeInterrupted();
+			}
+			else
+			{
+				mayBeInterrupted = mGroupActors[mCurrActingGroup]->mayBeInterrupted();
+			}
+
+			if (mayBeInterrupted && nukePanic(move))
+				return; // todo: move somewhere else?
+
 			if (mCurrActingGroup == mGroupActors.size()) // macro actions
 			{
 				if (!mMacroExecutionQueue.size() && mMacroConditionalQueue.size())
@@ -530,12 +539,10 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 					mMacroExecutionQueue.pop_front();
 					moved = true;
 				}
-				mayBeInterrupted = macroMayBeInterrupted();
 			}
 			else
 			{
 				moved = mGroupActors[mCurrActingGroup]->act(move, world);
-				mayBeInterrupted = mGroupActors[mCurrActingGroup]->mayBeInterrupted();
 			}
 			mThisGroupActedTimes++;
 			if (mayBeInterrupted && (!moved || mThisGroupActedTimes >= 2))
