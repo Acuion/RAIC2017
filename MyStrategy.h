@@ -36,6 +36,8 @@ private:
 	void unlockMacroInterruptions();
 	bool macroMayBeInterrupted();
 
+	bool nukePanic(Move& move);
+
 	bool mPanic;
 	int mPanicTime;
 	xypoint mPanicPoint;

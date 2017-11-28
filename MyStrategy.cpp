@@ -118,6 +118,17 @@ bool MyStrategy::macroMayBeInterrupted()
 	return !mDoNotInterruptMacroPlease;
 }
 
+bool MyStrategy::nukePanic(Move& move)
+{
+	// todo: store selection!
+	// calculate groups AABB
+	// select groups near the nuke
+	// scale out
+	// scale in
+	// restore selection!
+	return false;
+}
+
 void MyStrategy::firstTickActions(const Player& me, const World& world, const Game& game, Move& move)
 {
 	const auto getCenterOfGroup = [&](VehicleType vt)
@@ -496,6 +507,9 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	{
 		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
 			return;
+
+		if (nukePanic(move))
+			return; // todo: move somewhere else?
 
 		int startedFrom = mCurrActingGroup;
 		while (true)
