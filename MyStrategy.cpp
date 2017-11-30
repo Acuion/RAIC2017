@@ -654,8 +654,8 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 
 	if (world.getTickIndex() % 5 == 0)
 	{
-		//if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
-		//	return;
+		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
+			return;
 			
 		int startedFrom = mCurrActingGroup;
 		while (true)

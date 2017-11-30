@@ -188,5 +188,29 @@ MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStore
 
 double MyUnitGroup::getMaxSpeedOnVector(dxypoint vector, const World& world)
 {
-	return 0.18; // todo
+	double minspeed = 1e9;
+	for (auto& x : mIngroupIds)
+	{
+		double cs = 1e9;
+		switch (mGlobaler.getUnitInfo(x).mType)
+		{
+		case VehicleType::ARRV:
+		case VehicleType::IFV:
+			cs = 0.4;
+			break;
+		case VehicleType::FIGHTER:
+			cs = 1.2;
+			break;
+		case VehicleType::HELICOPTER:
+			cs = 0.9;
+			break;
+		case VehicleType::TANK:
+			cs = 0.3;
+			break;
+		}
+		minspeed = min(cs, minspeed);
+		if (cs == 0.3)
+			break;
+	}
+	return minspeed * 0.6;
 }
