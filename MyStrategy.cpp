@@ -50,7 +50,7 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		double mdf = 1;
 		if (air)
 		{
-			switch (world.getWeatherByCellXY()[round(u.second.mX / 32)][round(u.second.mY / 32)])
+			switch (world.getWeatherByCellXY()[u.second.mX / 32][u.second.mY / 32])
 			{
 			case WeatherType::CLEAR:
 
@@ -65,7 +65,7 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		}
 		else
 		{
-			switch (world.getTerrainByCellXY()[round(u.second.mX / 32)][round(u.second.mY / 32)])
+			switch (world.getTerrainByCellXY()[u.second.mX / 32][u.second.mY / 32])
 			{
 			case TerrainType::PLAIN: break;
 			case TerrainType::SWAMP:
@@ -613,6 +613,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	mGlobaler.setMyId(me.getId());
 	mGlobaler.processNews(world.getNewVehicles(), me.getId());
 	mGlobaler.processUpdates(world.getVehicleUpdates());
+	mGlobaler.updateFacilities(world.getFacilities());
 
 	if (world.getTickIndex() == 0)
 		firstTickActions(me, world, game, move);
@@ -621,6 +622,15 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	{
 		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
 			return;
+
+		auto newf = mGlobaler.getNewFacility();
+		if (newf.first != -1 && newf.second == FacilityType::VEHICLE_FACTORY)
+		{
+			move.setAction(ActionType::SETUP_VEHICLE_PRODUCTION);
+			move.setFacilityId(newf.first);
+			move.setVehicleType(VehicleType::IFV);
+			return;
+		}
 			
 		int startedFrom = mCurrActingGroup;
 		while (true)

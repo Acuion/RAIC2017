@@ -46,6 +46,23 @@ void MyGlobalInfoStorer::processNews(const vector<Vehicle>& startVehicleInfo, in
 	}
 }
 
+void MyGlobalInfoStorer::updateFacilities(const vector<Facility>& fs)
+{
+	for (auto& x : fs)
+		if (x.getOwnerPlayerId() == mMyId)
+		{
+			if (!mOurFacilities.count(x.getId()))
+			{
+				mOurFacilities.insert(x.getId());
+				mNewFacilities.push({ x.getId(), x.getType() });
+			}
+		}
+		else
+		{
+			mOurFacilities.erase(x.getId());
+		}
+}
+
 void MyGlobalInfoStorer::setMyId(int id)
 {
 	mMyId = id;
@@ -65,6 +82,18 @@ const set<int>& MyGlobalInfoStorer::getSelectedAllies() const
 {
 	return mSelectedAllies;
 }
+
+pair<int, FacilityType> MyGlobalInfoStorer::getNewFacility()
+{
+	auto cp = make_pair(-1, FacilityType::_UNKNOWN_);
+	if (mNewFacilities.size())
+	{
+		cp = mNewFacilities.front();
+		mNewFacilities.pop();
+	}
+	return cp;
+}
+
 
 bool MyGlobalInfoStorer::allyMoved(int id) const
 {
