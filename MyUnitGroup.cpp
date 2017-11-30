@@ -5,9 +5,11 @@ int MyUnitGroup::sGroupsCount = 0; // max == 100
 
 bool MyUnitGroup::act(Move& move, const World& world)
 {
-	for (auto& x : mIngroupIds)
-		if (!mGlobaler.getOurVehicles().count(x))
-			mIngroupIds.erase(x);
+	for (auto it = mIngroupIds.begin(); it != mIngroupIds.end();)
+		if (!mGlobaler.getOurVehicles().count(*it))
+			it = mIngroupIds.erase(it);
+		else
+			++it;
 
 	if (!mIngroupIds.size())
 		return false;

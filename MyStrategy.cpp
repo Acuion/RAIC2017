@@ -551,6 +551,14 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		auto finishCreation = [=]
 		{
 			mMacroConditionalQueue.push_back({
+				passFunc, VALFHDR
+			{
+				move.setAction(ActionType::CLEAR_AND_SELECT);
+				move.setRight(1024);
+				move.setBottom(1024);
+			}
+			});
+			mMacroConditionalQueue.push_back({
 				allStopedFunc, VALFHDR
 			{
 				move.setAction(ActionType::ROTATE);
@@ -595,6 +603,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 						{
 							move.setAction(ActionType::CLEAR_AND_SELECT);
 							move.setLeft(theCenter.first);
+							move.setRight(1024);
 							move.setBottom(1024);
 							pushToTheFrontOfQueue(VALFHDR
 							{
@@ -616,6 +625,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 						{
 							move.setAction(ActionType::CLEAR_AND_SELECT);
 							move.setTop(theCenter.first);
+							move.setBottom(1024);
 							move.setRight(1024);
 							pushToTheFrontOfQueue(VALFHDR
 							{
@@ -628,6 +638,8 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			}
 			});
 		}
+		else
+			finishCreation();
 	}
 	});
 }
@@ -650,7 +662,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 		{
 			bool moved = false;
 			bool mayBeInterrupted;
-			if (mCurrActingGroup == mGroupActors.size()) // macro actions
+			if (mCurrActingGroup == -1) // macro actions
 			{
 				mayBeInterrupted = macroMayBeInterrupted();
 			}
@@ -662,7 +674,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			if (mayBeInterrupted && nukePanic(move, world))
 				return; // todo: move somewhere else?
 
-			if (mCurrActingGroup == mGroupActors.size()) // macro actions
+			if (mCurrActingGroup == -1) // macro actions
 			{
 				if (!mMacroExecutionQueue.size() && mMacroConditionalQueue.size())
 					if (mMacroConditionalQueue.front().first(world))
@@ -686,6 +698,8 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			{
 				mThisGroupActedTimes = 0;
 				mCurrActingGroup = (mCurrActingGroup + 1) % (mGroupActors.size() + 1);
+				if (mCurrActingGroup == mGroupActors.size())
+					mCurrActingGroup = -1;
 			}
 			if (moved || mCurrActingGroup == startedFrom)
 				break;
@@ -698,7 +712,7 @@ MyStrategy::MyStrategy()
 	, mPanicSelection(false)
 	, mLastNuke(-10000)
 	, mDoNotInterruptMacroPlease(false)
-	, mCurrActingGroup(0)
+	, mCurrActingGroup(-1)
 	, mThisGroupActedTimes(0)
 {
 	mInfinityChaseRound1 = VALFHDR
