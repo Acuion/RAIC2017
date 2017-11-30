@@ -28,7 +28,6 @@ public:
     void move(const model::Player& me, const model::World& world, const model::Game& game, model::Move& move) override;
 private:
 	void firstTickActions(const Player& me, const World& world, const Game& game, Move& move);
-	void selectVehicles(VehicleType vt, Move& mv);
 	bool nukeEmAll(const Player& me, const model::World& world, model::Move& move);
 	shared_ptr<MyUnitGroup> createGroup(Move& move, const World& world);
 
