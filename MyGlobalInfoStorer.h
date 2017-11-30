@@ -19,6 +19,7 @@ class MyGlobalInfoStorer
 public:
 	void processUpdates(const vector<VehicleUpdate>& vu);
 	void processNews(const vector<Vehicle>& startVehicleInfo, int myPlayerId);
+	void setMyId(int id);
 
 	const map<int, VehicleBasicInfo>& getOurVehicles() const;
 	const map<int, VehicleBasicInfo>& getEnemyVehicles() const;
@@ -27,7 +28,9 @@ public:
 	bool isAlly(int id) const;
 	const VehicleBasicInfo& getUnitInfo(int id) const;
 	bool anyAllyMoved() const;
+	int getMyId() const;
 private:
+	int mMyId;
 	set<int> mSelectedAllies;
 	map<int, bool> mAllyMovedThisTurn;
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;

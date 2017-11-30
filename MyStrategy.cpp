@@ -26,15 +26,18 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 	{
 		xypoint gridedPos = {round(u.second.mX / 4) * 4, round(u.second.mY / 4) * 4};
 		double r = 0;
+		bool air = false;
 		switch (u.second.mType)
 		{
 		case VehicleType::ARRV:
 			r = 60;
 			break;
 		case VehicleType::FIGHTER:
+			air = true;
 			r = 120;
 			break;
 		case VehicleType::HELICOPTER:
+			air = true;
 			r = 100;
 			break;
 		case VehicleType::IFV:
@@ -44,7 +47,35 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 			r = 80;
 			break;
 		}
-		r *= 0.6;
+		double mdf = 1;
+		if (air)
+		{
+			switch (world.getWeatherByCellXY()[round(u.second.mX / 32)][round(u.second.mY / 32)])
+			{
+			case WeatherType::CLEAR:
+
+				break;
+			case WeatherType::CLOUD:
+				mdf = 0.8;
+				break;
+			case WeatherType::RAIN:
+				mdf = 0.6;
+				break;
+			}
+		}
+		else
+		{
+			switch (world.getTerrainByCellXY()[round(u.second.mX / 32)][round(u.second.mY / 32)])
+			{
+			case TerrainType::PLAIN: break;
+			case TerrainType::SWAMP:
+				break;
+			case TerrainType::FOREST:
+				mdf = 0.8;
+				break;
+			}
+		}
+		r *= mdf;
 		r = floor(r / 4) * 4;
 
 		for (int x = gridedPos.first - r; x <= gridedPos.first + r; x += 16)
@@ -83,8 +114,10 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		}
 	}
 
-	if (bestscore > 0.3)
+	static double nukeThreshold = 3.14;
+	if (bestscore > nukeThreshold)
 	{
+		nukeThreshold = 0.3;
 		move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
 		move.setVehicleId(ptid[bestnp]);
 		move.setX(bestnp.first);
@@ -548,104 +581,36 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			});
 		}
 
-		auto finishCreation = [=]
+		mMacroConditionalQueue.push_back({
+			allStopedFunc, VALFHDR
 		{
-			mMacroConditionalQueue.push_back({
-				passFunc, VALFHDR
-			{
-				move.setAction(ActionType::CLEAR_AND_SELECT);
-				move.setRight(1024);
-				move.setBottom(1024);
-			}
-			});
-			mMacroConditionalQueue.push_back({
-				allStopedFunc, VALFHDR
-			{
-				move.setAction(ActionType::ROTATE);
-				move.setX(theCenter.first);
-				move.setY(theCenter.second);
-				if (horisontalFormation)
-					move.setAngle(PI / 4);
-				else
-					move.setAngle(-PI / 4);
-			}
-			});
-			mMacroConditionalQueue.push_back({
-				allStopedFunc, VALFHDR
-			{
-				move.setAction(ActionType::SCALE);
-				move.setX(theCenter.first);
-				move.setY(theCenter.second);
-				move.setFactor(0.2);
-				unlockMacroInterruptions(); // !!!!
-			}
-			});
-			if (mGameMode == GameMode::Round1)
-				mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound1 });
+			move.setAction(ActionType::ROTATE);
+			move.setX(theCenter.first);
+			move.setY(theCenter.second);
+			if (horisontalFormation)
+				move.setAngle(PI / 4);
 			else
-				mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound2 });
-		};
-
-		if (mGameMode == GameMode::Round2)
-		{
-			mMacroConditionalQueue.push_back({
-				allStopedFunc, VALFHDR
-			{
-				if (!horisontalFormation)
-				{
-					move.setAction(ActionType::CLEAR_AND_SELECT);
-					move.setRight(theCenter.first);
-					move.setBottom(1024);
-					pushToTheFrontOfQueue(VALFHDR
-					{
-						mGroup1 = createGroup(move, world);
-						pushToTheFrontOfQueue(VALFHDR
-						{
-							move.setAction(ActionType::CLEAR_AND_SELECT);
-							move.setLeft(theCenter.first);
-							move.setRight(1024);
-							move.setBottom(1024);
-							pushToTheFrontOfQueue(VALFHDR
-							{
-								mGroup2 = createGroup(move, world);
-								finishCreation();
-							});
-						});
-					});
-				}
-				else
-				{
-					move.setAction(ActionType::CLEAR_AND_SELECT);
-					move.setBottom(theCenter.first);
-					move.setRight(1024);
-					pushToTheFrontOfQueue(VALFHDR
-					{
-						mGroup1 = createGroup(move, world);
-						pushToTheFrontOfQueue(VALFHDR
-						{
-							move.setAction(ActionType::CLEAR_AND_SELECT);
-							move.setTop(theCenter.first);
-							move.setBottom(1024);
-							move.setRight(1024);
-							pushToTheFrontOfQueue(VALFHDR
-							{
-								mGroup2 = createGroup(move, world);
-								finishCreation();
-							});
-						});
-					});
-				}
-			}
-			});
+				move.setAngle(-PI / 4);
 		}
-		else
-			finishCreation();
+		});
+		mMacroConditionalQueue.push_back({
+			allStopedFunc, VALFHDR
+		{
+			move.setAction(ActionType::SCALE);
+			move.setX(theCenter.first);
+			move.setY(theCenter.second);
+			move.setFactor(0.2);
+			unlockMacroInterruptions(); // !!!!
+		}
+		});
+		mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound1 });
 	}
 	});
 }
 
 void MyStrategy::move(const Player& me, const World& world, const Game& game, Move& move)
 {
+	mGlobaler.setMyId(me.getId());
 	mGlobaler.processNews(world.getNewVehicles(), me.getId());
 	mGlobaler.processUpdates(world.getVehicleUpdates());
 
@@ -738,6 +703,17 @@ MyStrategy::MyStrategy()
 				currDist = dist;
 			}
 		}
+		for (auto& x : world.getFacilities())
+		{
+			if (x.getOwnerPlayerId() == mGlobaler.getMyId())
+				continue;
+			double dist = hypot(x.getLeft() + 32 - theCenter.first, x.getTop() + 32 - theCenter.second);
+			if (dist < currDist)
+			{
+				nearest = { x.getLeft() + 32, x.getTop() + 32 };
+				currDist = dist;
+			}
+		}
 
 		if (world.getTickIndex() - mLastNuke > 30)
 		{
@@ -755,12 +731,5 @@ MyStrategy::MyStrategy()
 			}
 		}
 		mMacroExecutionQueue.push_back(mInfinityChaseRound1);
-	};
-	mInfinityChaseRound2 = VALFHDR
-	{
-		mGroup1->move({0, 50}, false);
-		mGroup2->move({50, 0}, false);
-
-		mMacroExecutionQueue.push_back(mInfinityChaseRound2);
 	};
 }

@@ -46,6 +46,11 @@ void MyGlobalInfoStorer::processNews(const vector<Vehicle>& startVehicleInfo, in
 	}
 }
 
+void MyGlobalInfoStorer::setMyId(int id)
+{
+	mMyId = id;
+}
+
 const map<int, VehicleBasicInfo>& MyGlobalInfoStorer::getOurVehicles() const
 {
 	return mOurVehicles;
@@ -81,4 +86,9 @@ const VehicleBasicInfo& MyGlobalInfoStorer::getUnitInfo(int id) const
 bool MyGlobalInfoStorer::anyAllyMoved() const
 {
 	return mAllyMovedThisTurn.size();
+}
+
+int MyGlobalInfoStorer::getMyId() const
+{
+	return mMyId;
 }

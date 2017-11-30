@@ -42,9 +42,7 @@ private:
 	int mPanicTime;
 	xypoint mPanicPoint;
 	int mLastNuke;
-	turnPrototype mInfinityChaseRound1, mInfinityChaseRound2;
-
-	shared_ptr<MyUnitGroup> mGroup1, mGroup2;
+	turnPrototype mInfinityChaseRound1;
 
 	bool mDoNotInterruptMacroPlease;
 	deque<turnPrototype> mMacroExecutionQueue;
@@ -59,8 +57,7 @@ private:
 	enum class GameMode
 	{
 		Round1,
-		Round2,
-		Final
+		Round2
 	};
 	GameMode mGameMode;
 };
