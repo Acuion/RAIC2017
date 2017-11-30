@@ -53,7 +53,6 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 			switch (world.getWeatherByCellXY()[u.second.mX / 32][u.second.mY / 32])
 			{
 			case WeatherType::CLEAR:
-
 				break;
 			case WeatherType::CLOUD:
 				mdf = 0.8;
@@ -693,13 +692,19 @@ MyStrategy::MyStrategy()
 	mInfinityChaseRound1 = VALFHDR
 	{
 		xypoint theCenter = {0,0};
+		int ifvs = 0;
 		for (auto& x : mGlobaler.getOurVehicles())
 		{
+			if (mGameMode == GameMode::Round2 && x.second.mType == VehicleType::IFV)
+			{
+				ifvs++;
+				continue; // todo: lol, fix it
+			}
 			theCenter.first += x.second.mX;
 			theCenter.second += x.second.mY;
 		}
-		theCenter.first /= mGlobaler.getOurVehicles().size();
-		theCenter.second /= mGlobaler.getOurVehicles().size();
+		theCenter.first /= (mGlobaler.getOurVehicles().size() - ifvs);
+		theCenter.second /= (mGlobaler.getOurVehicles().size() - ifvs);
 
 		xypoint nearest = {512, 512};
 		double currDist = 1e9;
