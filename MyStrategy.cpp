@@ -114,10 +114,12 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		}
 	}
 
-	static double nukeThreshold = 3.14;
-	if (bestscore > nukeThreshold)
+	static double nukeAttempts = 0;
+	if (bestscore > 0.3)
 	{
-		nukeThreshold = 0.3;
+		nukeAttempts++;
+		if (nukeAttempts < 50)
+			return false;
 		move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
 		move.setVehicleId(ptid[bestnp]);
 		move.setX(bestnp.first);
@@ -155,39 +157,37 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 {
 	if (!mPanic)
 	{
-		xypoint theCenter = { 0,0 };
-		for (auto& x : mGlobaler.getOurVehicles())
-		{
-			theCenter.first += x.second.mX;
-			theCenter.second += x.second.mY;
-		}
-		theCenter.first /= mGlobaler.getOurVehicles().size();
-		theCenter.second /= mGlobaler.getOurVehicles().size();
+		xypoint ournp = {world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY() };
+		xypoint enenp = {world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY() };
 
-		double disttonuke1 = sqrt(
-			(world.getMyPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getMyPlayer().getNextNuclearStrikeX() -
-				theCenter.first) +
-				(world.getMyPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getMyPlayer().getNextNuclearStrikeY() -
-					theCenter.second));
-		double disttonuke2 = sqrt(
-			(world.getOpponentPlayer().getNextNuclearStrikeX() - theCenter.first) * (world.getOpponentPlayer().
-				getNextNuclearStrikeX() - theCenter.
-				first) +
-				(world.getOpponentPlayer().getNextNuclearStrikeY() - theCenter.second) * (world.getOpponentPlayer().
-					getNextNuclearStrikeY() - theCenter.
-					second));
+		const auto countDamage = [&](xypoint point)
+		{
+			double dmg = 0;
+			for (auto& x : mGlobaler.getOurVehicles())
+			{
+				double dst = hypot(x.second.mX - point.first, x.second.mY - point.second);
+				if (dst > 50)
+					continue;
+				dmg += (99 - 99 * (dst / 50));
+			}
+			return dmg;
+		};
 
-		if (disttonuke2 < 110 && world.getOpponentPlayer().getNextNuclearStrikeX() >= 0)
+		if (enenp.first >= 0)
 		{
-			mPanic = true;
-			mPanicPoint = {
-				world.getOpponentPlayer().getNextNuclearStrikeX(), world.getOpponentPlayer().getNextNuclearStrikeY()
-			};
+			if (countDamage(enenp) > 1)
+			{
+				mPanic = true;
+				mPanicPoint = enenp;
+			}
 		}
-		else if (disttonuke1 < 110 && world.getMyPlayer().getNextNuclearStrikeX() >= 0)
+		else if (ournp.first >= 0)
 		{
-			mPanic = true;
-			mPanicPoint = { world.getMyPlayer().getNextNuclearStrikeX(), world.getMyPlayer().getNextNuclearStrikeY() };
+			if (countDamage(ournp) > 2)
+			{
+				mPanic = true;
+				mPanicPoint = ournp;
+			}
 		}
 		if (mPanic)
 		{
