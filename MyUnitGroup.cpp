@@ -188,6 +188,11 @@ double MyUnitGroup::getGroupRadius() const
 	return mxd;
 }
 
+void MyUnitGroup::dropSelection()
+{
+	sCurrentlySelectedGroup = -1;
+}
+
 MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler) // will assign (takes 1 turn)
 	: mGlobaler(globaler)
 	, mDoNotInterruptPlease(false)

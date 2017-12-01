@@ -41,6 +41,8 @@ public:
 	xypoint getClosestEnemy() const;
 	double getGroupRadius() const;
 
+	static void dropSelection();
+
 	MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler);
 private:
 	struct ConditionalQueueItem

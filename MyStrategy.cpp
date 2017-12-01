@@ -216,6 +216,9 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 			else
 			{
 				mPanicSelection = mPanic = false;
+				move.setAction(ActionType::MOVE);
+				// stop
+				return true;
 			}
 		}
 		else
@@ -224,6 +227,7 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 			move.setRight(1024);
 			move.setBottom(1024);
 			mPanicSelection = true;
+			MyUnitGroup::dropSelection();
 		}
 	}
 	return mPanic;
@@ -653,7 +657,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 			}
 
 			if (mayBeInterrupted && nukePanic(move, world))
-				return; // todo: move somewhere else?
+				return;
 
 			if (mCurrActingGroup == -1) // macro actions
 			{
@@ -725,10 +729,7 @@ MyStrategy::MyStrategy()
 
 		if (world.getTickIndex() - mLastNuke > 30) // todo: rem
 		{
-			move.setAction(ActionType::MOVE);
-			move.setX(nearest.first - theCenter.first);
-			move.setY(nearest.second - theCenter.second);
-			move.setMaxSpeed(0.18);
+			thisGroup.move({ nearest.first - theCenter.first, nearest.second - theCenter.second }, true, move, world);
 			if (abs(move.getX()) < 32 && abs(move.getY()) < 32 && world.getTickIndex() % 10)
 			{
 				move.setAction(ActionType::SCALE);
