@@ -7,6 +7,7 @@
 #define sq(x) ((x)*(x))
 
 #define VALFHDR [=](Move& move, const World& world)
+#define GRVALFHDR [=](Move& move, const World& world, MyUnitGroup& thisGroup)
 #define REFFHDR [&](Move& move, const World& world)
 
 void MyStrategy::selectVehicles(VehicleType vt, Move& mv)
@@ -257,7 +258,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	};
 	const auto passFunc = function<bool(const World&)>([=](const World&) { return true; });
 	const auto allStopedFunc = function<bool(const World&)>([=](const World&) { return !mGlobaler.anyAllyMoved(); });
-	const auto pushToTheFrontOfQueue = [=](turnPrototype func)
+	const auto pushToTheFrontOfQueue = [=](macroTurnPrototype func)
 	{
 		mMacroExecutionQueue.push_front(func);
 		swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
@@ -604,7 +605,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		mMacroConditionalQueue.push_back({ passFunc, VALFHDR
 		{
 			mSandwichGroup = createGroup(move, world);
-			mSandwichGroup->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChaseRound1, true);
+			mSandwichGroup->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, true);
 			unlockMacroInterruptions(); // !!!!
 		}
 		});
@@ -694,23 +695,15 @@ MyStrategy::MyStrategy()
 	, mCurrActingGroup(-1)
 	, mThisGroupActedTimes(0)
 {
-	mInfinityChaseRound1 = VALFHDR
+	mInfinityChase = GRVALFHDR
 	{
-		xypoint theCenter = {0,0};
-		for (auto& x : mGlobaler.getOurVehicles())
-		{
-			theCenter.first += x.second.mX;
-			theCenter.second += x.second.mY;
-		}
-		theCenter.first /= mGlobaler.getOurVehicles().size();
-		theCenter.second /= mGlobaler.getOurVehicles().size();
+		xypoint theCenter = thisGroup.getCenterOfGroup();
 
 		xypoint nearest = {512, 512};
 		double currDist = 1e9;
 		for (auto& x : mGlobaler.getEnemyVehicles())
 		{
-			double dist = sqrt((x.second.mX - theCenter.first) * (x.second.mX - theCenter.first) +
-				(x.second.mY - theCenter.second) * (x.second.mY - theCenter.second));
+			double dist = hypot(x.second.mX - theCenter.first, x.second.mY - theCenter.second);
 			if (dist < currDist)
 			{
 				nearest = {x.second.mX, x.second.mY};

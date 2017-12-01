@@ -23,7 +23,7 @@ class MyUnitGroup
 {
 public:
 	bool act(Move& move, const World& world);
-	void pushToConditionalQueue(CondQueueCondition cnd, function<void(Move&, const World&)> func, bool recursive = false);
+	void pushToConditionalQueue(CondQueueCondition cnd, function<void(Move&, const World&, MyUnitGroup&)> func, bool recursive = false);
 
 	void lockInterrupts();
 	void unlockInterrupts();
@@ -32,7 +32,6 @@ public:
 	void move(dxypoint vector, bool saveFormation, Move& move, const World& world);
 	void scale(dxypoint point, double factor, Move& move, const World& world);
 	void forcedSelect(Move& move);
-	void appendGroup(shared_ptr<MyUnitGroup> group, Move& move);
 	void setTag(const string& tag);
 
 	const string& getTag() const;
@@ -47,7 +46,7 @@ private:
 	struct ConditionalQueueItem
 	{
 		CondQueueCondition mCond;
-		function<void(Move&, const World&)> mFunc;
+		function<void(Move&, const World&, MyUnitGroup&)> mFunc;
 		bool mRecursive;
 	};
 
@@ -59,7 +58,7 @@ private:
 
 	bool mDoNotInterruptPlease;
 	deque<ConditionalQueueItem> mConditionalQueue;
-	deque<function<void(Move&, const World&)>> mCurrentExecutionQueue;
+	deque<function<void(Move&, const World&, MyUnitGroup&)>> mCurrentExecutionQueue;
 
 	set<int> mIngroupIds;
 

@@ -50,12 +50,12 @@ bool MyUnitGroup::act(Move& move, const World& world)
 		return true;
 	}
 
-	mCurrentExecutionQueue.front()(move, world);
+	mCurrentExecutionQueue.front()(move, world, *this);
 	mCurrentExecutionQueue.pop_front();
 	return true;
 }
 
-void MyUnitGroup::pushToConditionalQueue(CondQueueCondition cnd, function<void(Move&, const World&)> func, bool recursive)
+void MyUnitGroup::pushToConditionalQueue(CondQueueCondition cnd, function<void(Move&, const World&, MyUnitGroup&)> func, bool recursive)
 {
 	mConditionalQueue.push_back({ cnd, func, recursive });
 }
@@ -77,7 +77,7 @@ bool MyUnitGroup::mayBeInterrupted()
 
 void MyUnitGroup::move(dxypoint vector, bool saveFormation, Move& move, const World& world)
 {
-	turnPrototype turn;
+	macroTurnPrototype turn;
 	if (saveFormation)
 	{
 		turn = VALFHDR
@@ -113,23 +113,6 @@ void MyUnitGroup::forcedSelect(Move& move)
 	move.setAction(ActionType::CLEAR_AND_SELECT);
 	move.setGroup(mGroupNumber);
 	sCurrentlySelectedGroup = mGroupNumber;
-}
-
-void MyUnitGroup::appendGroup(shared_ptr<MyUnitGroup> group, Move& move)
-{
-	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
-	{
-		lockInterrupts();
-	group->forcedSelect(move);
-	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
-	{
-		for (auto& x : mGlobaler.getSelectedAllies())
-		mIngroupIds.insert(x);
-	move.setAction(ActionType::ASSIGN);
-	move.setGroup(mGroupNumber);
-	unlockInterrupts();
-	}, false });
-	}, false });
 }
 
 void MyUnitGroup::setTag(const string& tag)

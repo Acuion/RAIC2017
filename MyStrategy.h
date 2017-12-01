@@ -17,7 +17,8 @@
 
 using namespace model;
 using namespace std;
-using turnPrototype = function<void(Move&, const World&)>;
+using macroTurnPrototype = function<void(Move&, const World&)>;
+using groupTurnPrototype = function<void(Move&, const World&, MyUnitGroup&)>;
 using xypoint = pair<int, int>;
 
 class MyStrategy : public Strategy
@@ -42,11 +43,11 @@ private:
 	int mPanicTime;
 	xypoint mPanicPoint;
 	int mLastNuke;
-	turnPrototype mInfinityChaseRound1;
+	groupTurnPrototype mInfinityChase;
 
 	bool mDoNotInterruptMacroPlease;
-	deque<turnPrototype> mMacroExecutionQueue;
-	deque<pair<function<bool(const World&)>, turnPrototype>> mMacroConditionalQueue;
+	deque<macroTurnPrototype> mMacroExecutionQueue;
+	deque<pair<function<bool(const World&)>, macroTurnPrototype>> mMacroConditionalQueue;
 
 	MyGlobalInfoStorer mGlobaler;
 
