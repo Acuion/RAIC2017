@@ -1,4 +1,5 @@
 #include "MyUnitGroup.h"
+#include "MyStrategy.h"
 
 int MyUnitGroup::sCurrentlySelectedGroup = -1;
 int MyUnitGroup::sGroupsCount = 0; // max == 100
@@ -18,7 +19,7 @@ bool MyUnitGroup::act(Move& move, const World& world)
 	{
 		auto fitem = mConditionalQueue.front();
 		bool conditionOk = false;
-		switch (fitem.first)
+		switch (fitem.mCond)
 		{
 		case CondQueueCondition::NoCondition:
 		{
@@ -33,7 +34,9 @@ bool MyUnitGroup::act(Move& move, const World& world)
 		}
 		if (conditionOk)
 		{
-			mCurrentExecutionQueue.push_back(fitem.second);
+			mCurrentExecutionQueue.push_back(fitem.mFunc);
+			if (fitem.mRecursive)
+				mConditionalQueue.push_back(mConditionalQueue.front());
 			mConditionalQueue.pop_front();
 		}
 	}
@@ -52,9 +55,9 @@ bool MyUnitGroup::act(Move& move, const World& world)
 	return true;
 }
 
-void MyUnitGroup::pushToConditionalQueue(pair<CondQueueCondition, function<void(Move&, const World&)>> func)
+void MyUnitGroup::pushToConditionalQueue(CondQueueCondition cnd, function<void(Move&, const World&)> func, bool recursive)
 {
-	mConditionalQueue.push_back(func);
+	mConditionalQueue.push_back({ cnd, func, recursive });
 }
 
 void MyUnitGroup::lockInterrupts()
@@ -72,49 +75,37 @@ bool MyUnitGroup::mayBeInterrupted()
 	return !mDoNotInterruptPlease;
 }
 
-void MyUnitGroup::move(dxypoint vector, bool saveFormation)
+void MyUnitGroup::move(dxypoint vector, bool saveFormation, Move& move, const World& world)
 {
+	turnPrototype turn;
 	if (saveFormation)
 	{
-		mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+		turn = VALFHDR
 		{
 			move.setAction(ActionType::MOVE);
-			move.setX(vector.first);
-			move.setY(vector.second);
-			move.setMaxSpeed(getMaxSpeedOnVector(vector, world));
-		} });
+		move.setX(vector.first);
+		move.setY(vector.second);
+		move.setMaxSpeed(getMaxSpeedOnVector(vector, world));
+		};
 	}
 	else
 	{
-		mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+		turn = VALFHDR
 		{
 			move.setAction(ActionType::MOVE);
-			move.setX(vector.first);
-			move.setY(vector.second);
-		} });
+		move.setX(vector.first);
+		move.setY(vector.second);
+		};
 	}
+	turn(move, world);
 }
 
-void MyUnitGroup::scale(dxypoint point, double factor)
+void MyUnitGroup::scale(dxypoint point, double factor, Move& move, const World& world)
 {
-	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
-	{
-		move.setAction(ActionType::SCALE);
-		move.setX(point.first);
-		move.setY(point.second);
-		move.setFactor(factor);
-	} });
-}
-
-void MyUnitGroup::rotate(dxypoint point, double angle)
-{
-	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
-	{
-		move.setAction(ActionType::ROTATE);
-		move.setX(point.first);
-		move.setY(point.second);
-		move.setAngle(angle);
-	} });
+	move.setAction(ActionType::SCALE);
+	move.setX(point.first);
+	move.setY(point.second);
+	move.setFactor(factor);
 }
 
 void MyUnitGroup::forcedSelect(Move& move)
@@ -129,21 +120,29 @@ void MyUnitGroup::appendGroup(shared_ptr<MyUnitGroup> group, Move& move)
 	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
 	{
 		lockInterrupts();
-		group->forcedSelect(move);
-		mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
-		{
-			for (auto& x : mGlobaler.getSelectedAllies())
-				mIngroupIds.insert(x);
-			move.setAction(ActionType::ASSIGN);
-			move.setGroup(mGroupNumber);
-			unlockInterrupts();
-		}
-		});
-	}
-	});
+	group->forcedSelect(move);
+	mConditionalQueue.push_back({ CondQueueCondition::NoCondition, VALFHDR
+	{
+		for (auto& x : mGlobaler.getSelectedAllies())
+		mIngroupIds.insert(x);
+	move.setAction(ActionType::ASSIGN);
+	move.setGroup(mGroupNumber);
+	unlockInterrupts();
+	}, false });
+	}, false });
 }
 
-const set<int>& MyUnitGroup::getGroupIdList()
+void MyUnitGroup::setTag(const string& tag)
+{
+	mTag = tag;
+}
+
+const string& MyUnitGroup::getTag() const
+{
+	return mTag;
+}
+
+const set<int>& MyUnitGroup::getGroupIdList() const
 {
 	return mIngroupIds;
 }
@@ -171,6 +170,39 @@ xypoint MyUnitGroup::getCenterOfGroup() const
 	center.first /= mIngroupIds.size();
 	center.second /= mIngroupIds.size();
 	return center;
+}
+
+xypoint MyUnitGroup::getClosestEnemy() const
+{
+	const auto center = getCenterOfGroup();
+
+	double mindst = 1e9;
+	xypoint ans = { -1, -1 };
+
+	for (auto& x : mGlobaler.getEnemyVehicles())
+	{
+		double currdst = hypot(center.first - x.second.mX, center.second - x.second.mY);
+		if (currdst < mindst)
+		{
+			mindst = currdst;
+			ans.first = x.second.mX;
+			ans.second = x.second.mY;
+		}
+	}
+
+	return ans;
+}
+
+double MyUnitGroup::getGroupRadius() const
+{
+	const auto center = getCenterOfGroup();
+	double mxd = -1;
+	for (auto& x : mIngroupIds)
+	{
+		const auto& unit = mGlobaler.getUnitInfo(x);
+		mxd = max(mxd, hypot(unit.mX - center.first, unit.mY - center.second));
+	}
+	return mxd;
 }
 
 MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler) // will assign (takes 1 turn)

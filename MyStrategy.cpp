@@ -599,10 +599,15 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			move.setX(theCenter.first);
 			move.setY(theCenter.second);
 			move.setFactor(0.2);
+		}
+		});
+		mMacroConditionalQueue.push_back({ passFunc, VALFHDR
+		{
+			mSandwichGroup = createGroup(move, world);
+			mSandwichGroup->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChaseRound1, true);
 			unlockMacroInterruptions(); // !!!!
 		}
 		});
-		mMacroConditionalQueue.push_back({ allStopedFunc, mInfinityChaseRound1 });
 	}
 	});
 }
@@ -692,19 +697,13 @@ MyStrategy::MyStrategy()
 	mInfinityChaseRound1 = VALFHDR
 	{
 		xypoint theCenter = {0,0};
-		int ifvs = 0;
 		for (auto& x : mGlobaler.getOurVehicles())
 		{
-			if (mGameMode == GameMode::Round2 && x.second.mType == VehicleType::IFV)
-			{
-				ifvs++;
-				continue; // todo: lol, fix it
-			}
 			theCenter.first += x.second.mX;
 			theCenter.second += x.second.mY;
 		}
-		theCenter.first /= (mGlobaler.getOurVehicles().size() - ifvs);
-		theCenter.second /= (mGlobaler.getOurVehicles().size() - ifvs);
+		theCenter.first /= mGlobaler.getOurVehicles().size();
+		theCenter.second /= mGlobaler.getOurVehicles().size();
 
 		xypoint nearest = {512, 512};
 		double currDist = 1e9;
@@ -730,7 +729,7 @@ MyStrategy::MyStrategy()
 			}
 		}
 
-		if (world.getTickIndex() - mLastNuke > 30)
+		if (world.getTickIndex() - mLastNuke > 30) // todo: rem
 		{
 			move.setAction(ActionType::MOVE);
 			move.setX(nearest.first - theCenter.first);
@@ -745,6 +744,5 @@ MyStrategy::MyStrategy()
 				move.setMaxSpeed(0.15);
 			}
 		}
-		mMacroExecutionQueue.push_back(mInfinityChaseRound1);
 	};
 }

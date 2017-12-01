@@ -60,6 +60,8 @@ private:
 		Round2
 	};
 	GameMode mGameMode;
+
+	shared_ptr<MyUnitGroup> mSandwichGroup;
 };
 
 #endif
