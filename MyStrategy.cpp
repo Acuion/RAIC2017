@@ -75,6 +75,7 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 				break;
 			}
 		}
+		mdf = 0.6; // todo
 		r *= mdf;
 		r = floor(r / 4) * 4;
 
