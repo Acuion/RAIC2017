@@ -638,10 +638,10 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 		{
 			move.setAction(ActionType::SETUP_VEHICLE_PRODUCTION);
 			move.setFacilityId(newf.first);
-			move.setVehicleType(VehicleType::IFV);
+			move.setVehicleType(VehicleType::HELICOPTER);
 			return;
 		}
-			
+		
 		int startedFrom = mCurrActingGroup;
 		while (true)
 		{
