@@ -638,10 +638,13 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 		auto newf = mGlobaler.getNewFacility();
 		if (newf.first != -1 && newf.second == FacilityType::VEHICLE_FACTORY)
 		{
+			mMacroConditionalQueue.push_back({ [=](const World& world) { return world.getTickIndex() - mGlobaler.getOurFacilities().at(newf.first).mCapturedAt > 200; },
+			VALFHDR
+			{
 			move.setAction(ActionType::SETUP_VEHICLE_PRODUCTION);
 			move.setFacilityId(newf.first);
-			move.setVehicleType(VehicleType::HELICOPTER);
-			return;
+			move.setVehicleType(VehicleType::IFV);
+			}});
 		}
 		
 		int startedFrom = mCurrActingGroup;
@@ -723,8 +726,7 @@ MyStrategy::MyStrategy()
 			}
 		}
 
-		if (thisGroup.getTag() != "Noobs")
-		{
+		if (thisGroup.getTag() != "NoobsAir")
 			for (auto& x : world.getFacilities())
 			{
 				if (x.getOwnerPlayerId() == mGlobaler.getMyId())
@@ -736,12 +738,11 @@ MyStrategy::MyStrategy()
 					currDist = dist;
 				}
 			}
-		}
 
 		if (world.getTickIndex() - mLastNuke > 30) // todo: rem
 		{
 			thisGroup.move({ nearest.first - theCenter.first, nearest.second - theCenter.second }, true, move, world);
-			if (((abs(move.getX()) < 32 && abs(move.getY()) < 32) || (thisGroup.getTag() == "Noobs" && thisGroup.getGroupActsCount() < 50)) && thisGroup.getGroupActsCount() % 10)
+			if (((abs(move.getX()) < 32 && abs(move.getY()) < 32) || ((thisGroup.getTag() == "NoobsLand" || thisGroup.getTag() == "NoobsAir") && thisGroup.getGroupActsCount() > 25 && thisGroup.getGroupActsCount() < 60)) && thisGroup.getGroupActsCount() % 3 == 0)
 			{
 				move.setAction(ActionType::SCALE);
 				move.setX(theCenter.first + 12);
@@ -760,28 +761,40 @@ MyStrategy::MyStrategy()
 			{
 				mMacroExecutionQueue.push_back(VALFHDR
 				{
-					lockMacroInterruptions();
-					move.setAction(ActionType::CLEAR_AND_SELECT);
-					move.setLeft(x.second.mX - 5);
-					move.setTop(x.second.mY - 5);
-					move.setRight(x.second.mX + 70);
-					move.setBottom(x.second.mY + 70);
-					move.setVehicleType(VehicleType::HELICOPTER);
+					VehicleType toBuildNext;
+					if (x.second.mCurrentlyConstructing == VehicleType::IFV)
+						toBuildNext = VehicleType::HELICOPTER;
+					else
+						toBuildNext = VehicleType::IFV;
+					move.setAction(ActionType::SETUP_VEHICLE_PRODUCTION);
+					move.setVehicleType(toBuildNext);
+					move.setFacilityId(x.first);
+					mGlobaler.getOurFacilities()[x.first].mCurrentlyConstructing = toBuildNext;
 					pushToTheFrontOfQueue(VALFHDR
 					{
-						auto noobs = createGroup(move, world);
-						noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, true);
-						noobs->setTag("Noobs");
-						unlockMacroInterruptions();
+						lockMacroInterruptions();
+						move.setAction(ActionType::CLEAR_AND_SELECT);
+						move.setLeft(x.second.mX - 5);
+						move.setTop(x.second.mY - 5);
+						move.setRight(x.second.mX + 70);
+						move.setBottom(x.second.mY + 70);
+						move.setVehicleType(x.second.mCurrentlyConstructing);
 						pushToTheFrontOfQueue(VALFHDR
 						{
-							lockMacroInterruptions();
-							mSandwichGroup->forcedSelect(move);
+							auto noobs = createGroup(move, world);
+							noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, true);
+							noobs->setTag(std::string("Noobs") + ((toBuildNext != VehicleType::IFV) ? "Land" : "Air"));
+							unlockMacroInterruptions();
 							pushToTheFrontOfQueue(VALFHDR
 							{
-								move.setAction(ActionType::DISMISS);
-								move.setGroup(noobs->getGroupId());
-								unlockMacroInterruptions();
+								lockMacroInterruptions();
+								mSandwichGroup->forcedSelect(move);
+								pushToTheFrontOfQueue(VALFHDR
+								{
+									move.setAction(ActionType::DISMISS);
+									move.setGroup(noobs->getGroupId());
+									unlockMacroInterruptions();
+								});
 							});
 						});
 					});

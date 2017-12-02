@@ -53,7 +53,7 @@ void MyGlobalInfoStorer::updateFacilities(const vector<Facility>& fs, int curren
 		{
 			if (!mOurFacilities.count(x.getId()))
 			{
-				mOurFacilities[x.getId()] = { x.getLeft(), x.getTop(), x.getType(), currentTick };
+				mOurFacilities[x.getId()] = { x.getLeft(), x.getTop(), x.getType(), currentTick, VehicleType::IFV };
 				mNewFacilities.push({ x.getId(), x.getType() });
 			}
 		}
@@ -68,7 +68,7 @@ void MyGlobalInfoStorer::setMyId(int id)
 	mMyId = id;
 }
 
-const map<int, FacilityBasicInfo>& MyGlobalInfoStorer::getOurFacilities() const
+map<int, FacilityBasicInfo>& MyGlobalInfoStorer::getOurFacilities()
 {
 	return mOurFacilities;
 }

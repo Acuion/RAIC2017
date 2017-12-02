@@ -21,6 +21,7 @@ struct FacilityBasicInfo
 	double mX, mY;
 	FacilityType mType;
 	int mCapturedAt;
+	VehicleType mCurrentlyConstructing;
 };
 
 class MyGlobalInfoStorer
@@ -31,7 +32,7 @@ public:
 	void updateFacilities(const vector<Facility>& fs, int currentTick);
 	void setMyId(int id);
 
-	const map<int, FacilityBasicInfo>& getOurFacilities() const;
+	map<int, FacilityBasicInfo>& getOurFacilities();
 	const map<int, VehicleBasicInfo>& getOurVehicles() const;
 	const map<int, VehicleBasicInfo>& getEnemyVehicles() const;
 	const set<int>& getSelectedAllies() const;
