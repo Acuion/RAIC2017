@@ -6,6 +6,8 @@ int MyUnitGroup::sGroupsCount = 0; // max == 100
 
 bool MyUnitGroup::act(Move& move, const World& world)
 {
+	++mGroupActs;
+
 	for (auto it = mIngroupIds.begin(); it != mIngroupIds.end();)
 		if (!mGlobaler.getOurVehicles().count(*it))
 			it = mIngroupIds.erase(it);
@@ -120,6 +122,16 @@ void MyUnitGroup::setTag(const string& tag)
 	mTag = tag;
 }
 
+int MyUnitGroup::getGroupActsCount() const
+{
+	return mGroupActs;
+}
+
+int MyUnitGroup::getGroupId() const
+{
+	return mGroupNumber;
+}
+
 const string& MyUnitGroup::getTag() const
 {
 	return mTag;
@@ -194,8 +206,9 @@ void MyUnitGroup::dropSelection()
 }
 
 MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler) // will assign (takes 1 turn)
-	: mGlobaler(globaler)
-	, mDoNotInterruptPlease(false)
+	: mDoNotInterruptPlease(false)
+	, mGlobaler(globaler)
+	, mGroupActs (0)
 {
 	mGroupNumber = ++sGroupsCount;
 

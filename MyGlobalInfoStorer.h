@@ -16,14 +16,22 @@ struct VehicleBasicInfo
 	VehicleType mType;
 };
 
+struct FacilityBasicInfo
+{
+	double mX, mY;
+	FacilityType mType;
+	int mCapturedAt;
+};
+
 class MyGlobalInfoStorer
 {
 public:
 	void processUpdates(const vector<VehicleUpdate>& vu);
 	void processNews(const vector<Vehicle>& startVehicleInfo, int myPlayerId);
-	void updateFacilities(const vector<Facility>& fs);
+	void updateFacilities(const vector<Facility>& fs, int currentTick);
 	void setMyId(int id);
 
+	const map<int, FacilityBasicInfo>& getOurFacilities() const;
 	const map<int, VehicleBasicInfo>& getOurVehicles() const;
 	const map<int, VehicleBasicInfo>& getEnemyVehicles() const;
 	const set<int>& getSelectedAllies() const;
@@ -35,9 +43,10 @@ public:
 	int getMyId() const;
 private:
 	int mMyId;
-	set<int> mSelectedAllies, mOurFacilities;
+	set<int> mSelectedAllies;
 	queue<pair<int, FacilityType>> mNewFacilities;
 	map<int, bool> mAllyMovedThisTurn;
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
+	map<int, FacilityBasicInfo> mOurFacilities;
 };
 

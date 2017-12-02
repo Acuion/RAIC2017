@@ -34,6 +34,8 @@ public:
 	void forcedSelect(Move& move);
 	void setTag(const string& tag);
 
+	int getGroupActsCount() const;
+	int getGroupId() const;
 	const string& getTag() const;
 	const set<int>& getGroupIdList() const;
 	bool moving() const;
@@ -67,4 +69,6 @@ private:
 	const MyGlobalInfoStorer& mGlobaler;
 
 	string mTag;
+
+	int mGroupActs;
 };

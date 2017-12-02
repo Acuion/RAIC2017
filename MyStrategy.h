@@ -39,11 +39,15 @@ private:
 
 	bool nukePanic(Move& move, const World& world);
 
+	void pushToTheFrontOfQueue(macroTurnPrototype func);
+
 	bool mPanic, mPanicSelection;
 	int mPanicTime;
 	xypoint mPanicPoint;
 	int mLastNuke;
 	groupTurnPrototype mInfinityChase;
+	macroTurnPrototype mNoobsToTheFight;
+	int mLastNoobsToFight;
 
 	bool mDoNotInterruptMacroPlease;
 	deque<macroTurnPrototype> mMacroExecutionQueue;

@@ -46,14 +46,14 @@ void MyGlobalInfoStorer::processNews(const vector<Vehicle>& startVehicleInfo, in
 	}
 }
 
-void MyGlobalInfoStorer::updateFacilities(const vector<Facility>& fs)
+void MyGlobalInfoStorer::updateFacilities(const vector<Facility>& fs, int currentTick)
 {
 	for (auto& x : fs)
 		if (x.getOwnerPlayerId() == mMyId)
 		{
 			if (!mOurFacilities.count(x.getId()))
 			{
-				mOurFacilities.insert(x.getId());
+				mOurFacilities[x.getId()] = { x.getLeft(), x.getTop(), x.getType(), currentTick };
 				mNewFacilities.push({ x.getId(), x.getType() });
 			}
 		}
@@ -66,6 +66,11 @@ void MyGlobalInfoStorer::updateFacilities(const vector<Facility>& fs)
 void MyGlobalInfoStorer::setMyId(int id)
 {
 	mMyId = id;
+}
+
+const map<int, FacilityBasicInfo>& MyGlobalInfoStorer::getOurFacilities() const
+{
+	return mOurFacilities;
 }
 
 const map<int, VehicleBasicInfo>& MyGlobalInfoStorer::getOurVehicles() const

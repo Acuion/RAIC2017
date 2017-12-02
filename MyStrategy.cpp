@@ -239,6 +239,12 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 	// restore selection! (or not, xm)
 }
 
+void MyStrategy::pushToTheFrontOfQueue(macroTurnPrototype func)
+{
+	mMacroExecutionQueue.push_front(func);
+	swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
+};
+
 void MyStrategy::firstTickActions(const Player& me, const World& world, const Game& game, Move& move)
 {
 	lockMacroInterruptions(); // !!!!!
@@ -263,11 +269,6 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 	};
 	const auto passFunc = function<bool(const World&)>([=](const World&) { return true; });
 	const auto allStopedFunc = function<bool(const World&)>([=](const World&) { return !mGlobaler.anyAllyMoved(); });
-	const auto pushToTheFrontOfQueue = [=](macroTurnPrototype func)
-	{
-		mMacroExecutionQueue.push_front(func);
-		swap(mMacroExecutionQueue[0], mMacroExecutionQueue[1]);
-	};
 
 	const xypoint tankCenter = getCenterOfGroup(VehicleType::TANK);
 	const xypoint ifvCenter = getCenterOfGroup(VehicleType::IFV);
@@ -614,6 +615,7 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 			unlockMacroInterruptions(); // !!!!
 		}
 		});
+		mMacroConditionalQueue.push_back({ [=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 500; }, mNoobsToTheFight });
 	}
 	});
 }
@@ -623,7 +625,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	mGlobaler.setMyId(me.getId());
 	mGlobaler.processNews(world.getNewVehicles(), me.getId());
 	mGlobaler.processUpdates(world.getVehicleUpdates());
-	mGlobaler.updateFacilities(world.getFacilities());
+	mGlobaler.updateFacilities(world.getFacilities(), world.getTickIndex());
 
 	if (world.getTickIndex() == 0)
 		firstTickActions(me, world, game, move);
@@ -647,15 +649,18 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 		{
 			bool moved = false;
 			bool mayBeInterrupted;
-			if (mCurrActingGroup == -1) // macro actions
+			auto const updateIntStatus = [&]
 			{
-				mayBeInterrupted = macroMayBeInterrupted();
-			}
-			else
-			{
-				mayBeInterrupted = mGroupActors[mCurrActingGroup]->mayBeInterrupted();
-			}
-
+				if (mCurrActingGroup == -1) // macro actions
+				{
+					mayBeInterrupted = macroMayBeInterrupted();
+				}
+				else
+				{
+					mayBeInterrupted = mGroupActors[mCurrActingGroup]->mayBeInterrupted();
+				}
+			};
+			updateIntStatus();
 			if (mayBeInterrupted && nukePanic(move, world))
 				return;
 
@@ -679,6 +684,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 				moved = mGroupActors[mCurrActingGroup]->act(move, world);
 			}
 			mThisGroupActedTimes++;
+			updateIntStatus(); // after a move
 			if (mayBeInterrupted && (!moved || mThisGroupActedTimes >= 2))
 			{
 				mThisGroupActedTimes = 0;
@@ -696,6 +702,7 @@ MyStrategy::MyStrategy()
 	: mPanic(false)
 	, mPanicSelection(false)
 	, mLastNuke(-10000)
+	, mLastNoobsToFight(-1)
 	, mDoNotInterruptMacroPlease(false)
 	, mCurrActingGroup(-1)
 	, mThisGroupActedTimes(0)
@@ -715,22 +722,26 @@ MyStrategy::MyStrategy()
 				currDist = dist;
 			}
 		}
-		for (auto& x : world.getFacilities())
+
+		if (thisGroup.getTag() != "Noobs")
 		{
-			if (x.getOwnerPlayerId() == mGlobaler.getMyId())
-				continue;
-			double dist = hypot(x.getLeft() + 32 - theCenter.first, x.getTop() + 32 - theCenter.second);
-			if (dist < currDist)
+			for (auto& x : world.getFacilities())
 			{
-				nearest = { x.getLeft() + 32, x.getTop() + 32 };
-				currDist = dist;
+				if (x.getOwnerPlayerId() == mGlobaler.getMyId())
+					continue;
+				double dist = hypot(x.getLeft() + 32 - theCenter.first, x.getTop() + 32 - theCenter.second);
+				if (dist < currDist)
+				{
+					nearest = { x.getLeft() + 32, x.getTop() + 32 };
+					currDist = dist;
+				}
 			}
 		}
 
 		if (world.getTickIndex() - mLastNuke > 30) // todo: rem
 		{
 			thisGroup.move({ nearest.first - theCenter.first, nearest.second - theCenter.second }, true, move, world);
-			if (abs(move.getX()) < 32 && abs(move.getY()) < 32 && world.getTickIndex() % 10)
+			if (((abs(move.getX()) < 32 && abs(move.getY()) < 32) || (thisGroup.getTag() == "Noobs" && thisGroup.getGroupActsCount() < 50)) && thisGroup.getGroupActsCount() % 10)
 			{
 				move.setAction(ActionType::SCALE);
 				move.setX(theCenter.first + 12);
@@ -739,5 +750,45 @@ MyStrategy::MyStrategy()
 				move.setMaxSpeed(0.15);
 			}
 		}
+	};
+	mNoobsToTheFight = VALFHDR
+	{
+		mLastNoobsToFight = world.getTickIndex();
+		for (auto& x : mGlobaler.getOurFacilities())
+		{
+			if (x.second.mType == FacilityType::VEHICLE_FACTORY && world.getTickIndex() - x.second.mCapturedAt > 600)
+			{
+				mMacroExecutionQueue.push_back(VALFHDR
+				{
+					lockMacroInterruptions();
+					move.setAction(ActionType::CLEAR_AND_SELECT);
+					move.setLeft(x.second.mX - 5);
+					move.setTop(x.second.mY - 5);
+					move.setRight(x.second.mX + 70);
+					move.setBottom(x.second.mY + 70);
+					move.setVehicleType(VehicleType::HELICOPTER);
+					pushToTheFrontOfQueue(VALFHDR
+					{
+						auto noobs = createGroup(move, world);
+						noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, true);
+						noobs->setTag("Noobs");
+						unlockMacroInterruptions();
+						pushToTheFrontOfQueue(VALFHDR
+						{
+							lockMacroInterruptions();
+							mSandwichGroup->forcedSelect(move);
+							pushToTheFrontOfQueue(VALFHDR
+							{
+								move.setAction(ActionType::DISMISS);
+								move.setGroup(noobs->getGroupId());
+								unlockMacroInterruptions();
+							});
+						});
+					});
+				});
+			}
+		}
+
+		mMacroConditionalQueue.push_back({ [=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 1000; }, mNoobsToTheFight});
 	};
 }
