@@ -742,7 +742,7 @@ MyStrategy::MyStrategy()
 		if (world.getTickIndex() - mLastNuke > 30) // todo: rem
 		{
 			thisGroup.move({ nearest.first - theCenter.first, nearest.second - theCenter.second }, true, move, world);
-			if (((abs(move.getX()) < 32 && abs(move.getY()) < 32) || ((thisGroup.getTag() == "NoobsLand" || thisGroup.getTag() == "NoobsAir") && thisGroup.getGroupActsCount() > 25 && thisGroup.getGroupActsCount() < 60)) && thisGroup.getGroupActsCount() % 3 == 0)
+			if (((abs(move.getX()) < 32 && abs(move.getY()) < 32) || ((thisGroup.getTag() == "NoobsLand" || thisGroup.getTag() == "NoobsAir") && thisGroup.getGroupActsCount() > 45 && thisGroup.getGroupActsCount() < 60)) && thisGroup.getGroupActsCount() % 3 == 0)
 			{
 				move.setAction(ActionType::SCALE);
 				move.setX(theCenter.first + 12);
@@ -802,6 +802,6 @@ MyStrategy::MyStrategy()
 			}
 		}
 
-		mMacroConditionalQueue.push_back({ [=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 1000; }, mNoobsToTheFight});
+		mMacroConditionalQueue.push_back({ [=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 1700; }, mNoobsToTheFight});
 	};
 }
