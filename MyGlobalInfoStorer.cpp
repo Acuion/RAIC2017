@@ -102,6 +102,8 @@ pair<int, FacilityType> MyGlobalInfoStorer::getNewFacility()
 
 bool MyGlobalInfoStorer::allyMoved(int id) const
 {
+	if (!mAllyMovedThisTurn.count(id))
+		return false;
 	return mAllyMovedThisTurn.at(id);
 }
 

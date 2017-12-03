@@ -33,7 +33,9 @@ public:
 	void scale(dxypoint point, double factor, Move& move, const World& world);
 	void forcedSelect(Move& move);
 	void setTag(const string& tag);
+	void setGroupAngle(double angle);
 
+	double getGroupAngle();
 	int getGroupActsCount() const;
 	int getGroupId() const;
 	const string& getTag() const;
@@ -45,7 +47,7 @@ public:
 
 	static void dropSelection();
 
-	MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler);
+	MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler, double groupAngle);
 private:
 	struct ConditionalQueueItem
 	{
@@ -71,4 +73,6 @@ private:
 	string mTag;
 
 	int mGroupActs;
+
+	double mGroupAngle;
 };

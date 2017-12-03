@@ -122,6 +122,16 @@ void MyUnitGroup::setTag(const string& tag)
 	mTag = tag;
 }
 
+void MyUnitGroup::setGroupAngle(double angle)
+{
+	mGroupAngle = angle;
+}
+
+double MyUnitGroup::getGroupAngle()
+{
+	return mGroupAngle;
+}
+
 int MyUnitGroup::getGroupActsCount() const
 {
 	return mGroupActs;
@@ -205,10 +215,11 @@ void MyUnitGroup::dropSelection()
 	sCurrentlySelectedGroup = -1;
 }
 
-MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler) // will assign (takes 1 turn)
+MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStorer& globaler, double groupAngle) // will assign (takes 1 turn)
 	: mDoNotInterruptPlease(false)
 	, mGlobaler(globaler)
-	, mGroupActs (0)
+	, mGroupActs(0)
+	, mGroupAngle(groupAngle)
 {
 	mGroupNumber = ++sGroupsCount;
 

@@ -50,4 +50,3 @@ private:
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
 	map<int, FacilityBasicInfo> mOurFacilities;
 };
-

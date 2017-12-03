@@ -132,9 +132,9 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 	return false;
 }
 
-shared_ptr<MyUnitGroup> MyStrategy::createGroup(Move& move, const World& world)
+shared_ptr<MyUnitGroup> MyStrategy::createGroup(Move& move, const World& world, double angle)
 {
-	auto sp = make_shared<MyUnitGroup>(move, world, mGlobaler);
+	auto sp = make_shared<MyUnitGroup>(move, world, mGlobaler, angle);
 	mGroupActors.push_back(sp);
 	return sp;
 }
@@ -610,8 +610,8 @@ void MyStrategy::firstTickActions(const Player& me, const World& world, const Ga
 		});
 		mMacroConditionalQueue.push_back({ passFunc, VALFHDR
 		{
-			mSandwichGroup = createGroup(move, world);
-			mSandwichGroup->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, true);
+			mSandwichGroup = createGroup(move, world, PI / 4);
+			mSandwichGroup->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, false);
 			unlockMacroInterruptions(); // !!!!
 		}
 		});
@@ -715,6 +715,7 @@ MyStrategy::MyStrategy()
 		xypoint theCenter = thisGroup.getCenterOfGroup();
 
 		xypoint nearest = {512, 512};
+		xypoint nearestEnemy = { 512, 512 };
 		double currDist = 1e9;
 		for (auto& x : mGlobaler.getEnemyVehicles())
 		{
@@ -722,6 +723,7 @@ MyStrategy::MyStrategy()
 			if (dist < currDist)
 			{
 				nearest = {x.second.mX, x.second.mY};
+				nearestEnemy = nearest;
 				currDist = dist;
 			}
 		}
@@ -751,6 +753,39 @@ MyStrategy::MyStrategy()
 				move.setMaxSpeed(0.15);
 			}
 		}
+
+		const auto absAnglesDiff = [](double a, double b)
+		{
+			double diff = min(abs(a - b), 2*PI - abs(a - b));
+			return min(diff, abs(diff - PI));
+		};
+
+		double angleToNearest = atan2(nearestEnemy.second - theCenter.second, nearestEnemy.first - theCenter.first);
+		double angleDiff = absAnglesDiff(angleToNearest, thisGroup.getGroupAngle());
+		const double rotateConst = PI / 18;
+		if (angleDiff > rotateConst * 2 && hypot(nearestEnemy.first - theCenter.first, nearestEnemy.second - theCenter.second) < 32 * 7)
+		{
+			double plusdiff = absAnglesDiff(angleToNearest, thisGroup.getGroupAngle() + rotateConst);
+			double minusdiff = absAnglesDiff(angleToNearest, thisGroup.getGroupAngle() - rotateConst);
+
+			move.setAction(ActionType::ROTATE);
+			move.setX(theCenter.first);
+			move.setY(theCenter.second);
+			if (plusdiff < minusdiff)
+			{
+				move.setAngle(rotateConst);
+			}
+			else
+			{
+				move.setAngle(-rotateConst);
+			}
+			thisGroup.setGroupAngle(thisGroup.getGroupAngle() + move.getAngle());
+			thisGroup.pushToConditionalQueue(CondQueueCondition::AllUnitStopped, mInfinityChase, false);
+		}
+		else
+		{
+			thisGroup.pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, false);
+		}
 	};
 	mNoobsToTheFight = VALFHDR
 	{
@@ -774,15 +809,15 @@ MyStrategy::MyStrategy()
 					{
 						lockMacroInterruptions();
 						move.setAction(ActionType::CLEAR_AND_SELECT);
-						move.setLeft(x.second.mX - 5);
-						move.setTop(x.second.mY - 5);
-						move.setRight(x.second.mX + 70);
-						move.setBottom(x.second.mY + 70);
+						move.setLeft(x.second.mX - 10);
+						move.setTop(x.second.mY - 10);
+						move.setRight(x.second.mX + 80);
+						move.setBottom(x.second.mY + 80);
 						move.setVehicleType(x.second.mCurrentlyConstructing);
 						pushToTheFrontOfQueue(VALFHDR
 						{
-							auto noobs = createGroup(move, world);
-							noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, true);
+							auto noobs = createGroup(move, world, PI / 2);
+							noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mInfinityChase, false);
 							noobs->setTag(std::string("Noobs") + ((toBuildNext != VehicleType::IFV) ? "Land" : "Air"));
 							unlockMacroInterruptions();
 							pushToTheFrontOfQueue(VALFHDR
