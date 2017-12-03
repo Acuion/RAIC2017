@@ -638,13 +638,14 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 		auto newf = mGlobaler.getNewFacility();
 		if (newf.first != -1 && newf.second == FacilityType::VEHICLE_FACTORY)
 		{
-			mMacroConditionalQueue.push_back({ [=](const World& world) { return world.getTickIndex() - mGlobaler.getOurFacilities().at(newf.first).mCapturedAt > 200; },
+			mMacroConditionalQueue.push_back({ [=](const World& world) { return mGlobaler.getOurFacilities().count(newf.first)
+				? world.getTickIndex() - mGlobaler.getOurFacilities().at(newf.first).mCapturedAt > 200 : true; },
 			VALFHDR
 			{
 			move.setAction(ActionType::SETUP_VEHICLE_PRODUCTION);
 			move.setFacilityId(newf.first);
 			move.setVehicleType(VehicleType::IFV);
-			}});
+			} });
 		}
 		
 		int startedFrom = mCurrActingGroup;
@@ -763,7 +764,7 @@ MyStrategy::MyStrategy()
 		double angleToNearest = atan2(nearestEnemy.second - theCenter.second, nearestEnemy.first - theCenter.first);
 		double angleDiff = absAnglesDiff(angleToNearest, thisGroup.getGroupAngle());
 		const double rotateConst = PI / 18;
-		if (angleDiff > rotateConst * 2 && hypot(nearestEnemy.first - theCenter.first, nearestEnemy.second - theCenter.second) < 32 * 7)
+		if (angleDiff > PI / 5 && hypot(nearestEnemy.first - theCenter.first, nearestEnemy.second - theCenter.second) < 32 * 7)
 		{
 			double plusdiff = absAnglesDiff(angleToNearest, thisGroup.getGroupAngle() + rotateConst);
 			double minusdiff = absAnglesDiff(angleToNearest, thisGroup.getGroupAngle() - rotateConst);
