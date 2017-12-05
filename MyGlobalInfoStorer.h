@@ -40,7 +40,8 @@ public:
 	void setMyId(int id);
 	void buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups);
 
-	int getCellOccup(int x, int y) const;
+	int getCellOccupLand(int x, int y) const;
+	int getCellOccupAir(int x, int y) const;
 	map<int, FacilityBasicInfo>& getOurFacilities();
 	const map<int, VehicleBasicInfo>& getOurVehicles() const;
 	const map<int, VehicleBasicInfo>& getEnemyVehicles() const;
@@ -58,5 +59,5 @@ private:
 	map<int, bool> mAllyMovedThisTurn;
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
 	map<int, FacilityBasicInfo> mOurFacilities;
-	vector<vector<int>> mCellOccup;
+	vector<vector<int>> mCellOccupLand, mCellOccupAir;
 };

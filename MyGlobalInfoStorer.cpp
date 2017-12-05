@@ -3,7 +3,8 @@
 
 MyGlobalInfoStorer::MyGlobalInfoStorer()
 {
-	mCellOccup.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+	mCellOccupLand.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+	mCellOccupAir.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
 }
 
 void MyGlobalInfoStorer::processUpdates(const vector<VehicleUpdate>& vu)
@@ -76,7 +77,10 @@ void MyGlobalInfoStorer::setMyId(int id)
 
 void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups)
 {
-	for (auto& y : mCellOccup)
+	for (auto& y : mCellOccupLand)
+		for (auto& x : y)
+			x = 0;
+	for (auto& y : mCellOccupAir)
 		for (auto& x : y)
 			x = 0;
 
@@ -84,14 +88,17 @@ void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups
 	{
 		int cx = x.second.mX / 16;
 		int cy = x.second.mY / 16;
-		mCellOccup[cx][cy] = 1000;
+		if (x.second.mType == VehicleType::HELICOPTER || x.second.mType == VehicleType::FIGHTER)
+			mCellOccupAir[cx][cy] = 1000;
+		else
+			mCellOccupLand[cx][cy] = 1000;
 	}
-	for (auto& x : mEnemyVehicles)
+	/*for (auto& x : mEnemyVehicles)
 	{
 		int cx = x.second.mX / 16;
 		int cy = x.second.mY / 16;
 		mCellOccup[cx][cy] = 1000;
-	}
+	}*/
 
 	for (auto& q : groups)
 	{
@@ -108,14 +115,24 @@ void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups
 
 			for (int y = aabb.first.second; y <= aabb.second.second; ++y)
 				for (int x = aabb.first.first; x <= aabb.second.first; ++x)
-					mCellOccup[x][y] = q->getGroupId();
+				{
+					if (q->getVehicleType() == VehicleType::HELICOPTER || q->getVehicleType() == VehicleType::FIGHTER)
+						mCellOccupAir[x][y] = q->getGroupId();
+					else
+						mCellOccupLand[x][y] = q->getGroupId();
+				}
 		}
 	}
 }
 
-int MyGlobalInfoStorer::getCellOccup(int x, int y) const
+int MyGlobalInfoStorer::getCellOccupLand(int x, int y) const
 {
-	return mCellOccup[x][y];
+	return mCellOccupLand[x][y];
+}
+
+int MyGlobalInfoStorer::getCellOccupAir(int x, int y) const
+{
+	return mCellOccupAir[x][y];
 }
 
 map<int, FacilityBasicInfo>& MyGlobalInfoStorer::getOurFacilities()

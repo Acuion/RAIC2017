@@ -101,7 +101,11 @@ void MyUnitGroup::smartMoveTo(dxypoint point, Move& move, const World& world)
 
 	const auto pointIsEmpty = [&](int x, int y)
 	{
-		auto co = mGlobaler.getCellOccup(x, y);
+		int co;
+		if (getVehicleType() == VehicleType::HELICOPTER || getVehicleType() == VehicleType::FIGHTER)
+			co = mGlobaler.getCellOccupAir(x, y);
+		else
+			co = mGlobaler.getCellOccupLand(x, y);
 		if (0 == co || getGroupId() == co)
 			return true;
 		if (ltcorner.first <= x && ltcorner.second <= y && rbcorner.first >= x && rbcorner.second >= y)
