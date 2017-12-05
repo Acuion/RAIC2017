@@ -855,17 +855,10 @@ MyStrategy::MyStrategy()
 				}
 			}
 
-		if (land)
-		{
-			if (currStructDist > 5000 && thisGroup.getVehicleType() != VehicleType::ARRV)
-				thisGroup.smartMoveTo(nearestEnemy, move, world);
-			else
-				thisGroup.smartMoveTo(nearestEnemyStruct, move, world);
-		}
-		else
-		{
+		if (currStructDist > 5000 && thisGroup.getVehicleType() != VehicleType::ARRV)
 			thisGroup.smartMoveTo(nearestEnemy, move, world);
-		}
+		else
+			thisGroup.smartMoveTo(nearestEnemyStruct, move, world);
 
 		if (thisGroup.getVehicleType() != VehicleType::ARRV)
 		{
