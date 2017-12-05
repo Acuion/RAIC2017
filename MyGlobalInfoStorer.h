@@ -6,9 +6,12 @@
 #include <map>
 #include "model/Facility.h"
 #include <queue>
+#include <memory>
 
 using namespace std;
 using namespace model;
+using xypoint = pair<int, int>;
+using dxypoint = pair<double, double>;
 
 struct VehicleBasicInfo
 {
@@ -24,14 +27,20 @@ struct FacilityBasicInfo
 	VehicleType mCurrentlyConstructing;
 };
 
+class MyUnitGroup;
+
 class MyGlobalInfoStorer
 {
 public:
+	MyGlobalInfoStorer();
+
 	void processUpdates(const vector<VehicleUpdate>& vu);
 	void processNews(const vector<Vehicle>& startVehicleInfo, int myPlayerId);
 	void updateFacilities(const vector<Facility>& fs, int currentTick);
 	void setMyId(int id);
+	void buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups);
 
+	int getCellOccup(int x, int y) const;
 	map<int, FacilityBasicInfo>& getOurFacilities();
 	const map<int, VehicleBasicInfo>& getOurVehicles() const;
 	const map<int, VehicleBasicInfo>& getEnemyVehicles() const;
@@ -49,4 +58,5 @@ private:
 	map<int, bool> mAllyMovedThisTurn;
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
 	map<int, FacilityBasicInfo> mOurFacilities;
+	vector<vector<int>> mCellOccup;
 };

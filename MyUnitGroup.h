@@ -10,8 +10,6 @@
 
 using namespace std;
 using namespace model;
-using xypoint = pair<int, int>;
-using dxypoint = pair<double, double>;
 
 enum class CondQueueCondition
 {
@@ -29,12 +27,18 @@ public:
 	void unlockInterrupts();
 	bool mayBeInterrupted();
 
+	void removeDestroyed();
+	void smartMoveTo(dxypoint point, Move& move, const World& world);
 	void move(dxypoint vector, bool saveFormation, Move& move, const World& world);
 	void scale(dxypoint point, double factor, Move& move, const World& world);
 	void forcedSelect(Move& move);
 	void setTag(const string& tag);
 	void setGroupAngle(double angle);
+	void setVehicleType(VehicleType type);
 
+	pair<xypoint, xypoint> getGridedAabb() const;
+	xypoint getMovingVector() const;
+	VehicleType getVehicleType() const;
 	double getGroupAngle();
 	int getGroupActsCount() const;
 	int getGroupId() const;
@@ -71,8 +75,11 @@ private:
 	const MyGlobalInfoStorer& mGlobaler;
 
 	string mTag;
+	VehicleType mVehicleType;
 
 	int mGroupActs;
 
 	double mGroupAngle;
+
+	xypoint mMovingVector;
 };

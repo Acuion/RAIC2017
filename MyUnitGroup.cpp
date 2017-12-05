@@ -8,12 +8,6 @@ bool MyUnitGroup::act(Move& move, const World& world)
 {
 	++mGroupActs;
 
-	for (auto it = mIngroupIds.begin(); it != mIngroupIds.end();)
-		if (!mGlobaler.getOurVehicles().count(*it))
-			it = mIngroupIds.erase(it);
-		else
-			++it;
-
 	if (!mIngroupIds.size())
 		return false;
 
@@ -77,6 +71,114 @@ bool MyUnitGroup::mayBeInterrupted()
 	return !mDoNotInterruptPlease;
 }
 
+void MyUnitGroup::removeDestroyed()
+{
+	for (auto it = mIngroupIds.begin(); it != mIngroupIds.end();)
+		if (!mGlobaler.getOurVehicles().count(*it))
+			it = mIngroupIds.erase(it);
+		else
+			++it;
+}
+
+void MyUnitGroup::smartMoveTo(dxypoint point, Move& move, const World& world)
+{
+	auto aabb = getGridedAabb();
+	auto ltcorner = aabb.first;
+	auto rbcorner = aabb.second;
+	point.first = point.first / 16;
+	point.second = point.second / 16;
+
+	int width = rbcorner.first - ltcorner.first;
+	int height = rbcorner.second - ltcorner.second;
+
+	queue<xypoint> q;
+	vector<vector<xypoint>> used(1024 / 16, vector<xypoint>(1024 / 16, {-1, -1}));
+	used[ltcorner.first][ltcorner.second] = ltcorner;
+	q.push(ltcorner);
+
+	const int dx[] = {0,0,1,-1,1,1,-1,-1 };
+	const int dy[] = {1,-1,0,0,1,-1,1,-1 };
+
+	const auto pointIsEmpty = [&](int x, int y)
+	{
+		auto co = mGlobaler.getCellOccup(x, y);
+		if (0 == co || getGroupId() == co)
+			return true;
+		if (ltcorner.first <= x && ltcorner.second <= y && rbcorner.first >= x && rbcorner.second >= y)
+			return true;
+		return false;
+	};
+
+	const auto groupAtPointDoesntIntersect = [&](xypoint nxt)
+	{
+		bool bad = false;
+		for (int i = 0; i < width; ++i)
+		{
+			if (!pointIsEmpty(nxt.first + i, nxt.second) || !pointIsEmpty(nxt.first + i, nxt.second + height))
+			{
+				bad = true;
+				break;
+			}
+		}
+		for (int i = 0; i < height; ++i)
+		{
+			if (!pointIsEmpty(nxt.first, nxt.second + i) || !pointIsEmpty(nxt.first + width, nxt.second + i))
+			{
+				bad = true;
+				break;
+			}
+		}
+		return !bad;
+	};
+
+	const auto pointIsInBounds = [&](xypoint nxt)
+	{
+		return nxt.first >= 0 && nxt.second >= 0 && nxt.first < 64 - width && nxt.second < 64 - height;
+	};
+
+	while (!q.empty())
+	{
+		auto t = q.front();
+		q.pop();
+
+		if (t.first <= point.first && t.second <= point.second && t.first + width >= point.first && t.second + height >= point.second)
+		{
+			xypoint lastDiff;
+			int countmv = 0;
+			while (used[t.first][t.second] != ltcorner)
+			{
+				t = used[t.first][t.second];
+			}
+			int i = 0;
+			xypoint moveTo = { ltcorner.first, ltcorner.second };
+			xypoint vector = { t.first - ltcorner.first, t.second - ltcorner.second };
+			if (vector.first != 0 || vector.second != 0)
+				for (i = 0; pointIsInBounds(moveTo) && groupAtPointDoesntIntersect(moveTo); ++i)
+				{
+					moveTo.first += vector.first;
+					moveTo.second += vector.second;
+				}
+			mMovingVector = vector;
+			this->move({vector.first * i * 16, vector.second * i * 16 }, true, move, world);
+			break;
+		}
+
+		for (int k = 0; k < 8; ++k)
+		{
+			xypoint nxt = { t.first + dx[k], t.second + dy[k] };
+			if (pointIsInBounds(nxt))
+			{
+				if (used[nxt.first][nxt.second].first != -1)
+					continue;
+				if (!groupAtPointDoesntIntersect(nxt))
+					continue;
+				q.push(nxt);
+				used[nxt.first][nxt.second] = t;
+			}
+		}
+	}
+}
+
 void MyUnitGroup::move(dxypoint vector, bool saveFormation, Move& move, const World& world)
 {
 	macroTurnPrototype turn;
@@ -125,6 +227,40 @@ void MyUnitGroup::setTag(const string& tag)
 void MyUnitGroup::setGroupAngle(double angle)
 {
 	mGroupAngle = angle;
+}
+
+void MyUnitGroup::setVehicleType(VehicleType type)
+{
+	mVehicleType = type;
+}
+
+pair<xypoint, xypoint> MyUnitGroup::getGridedAabb() const
+{
+	xypoint ltcorner = { 2000, 2000 }, rbcorner = { -1, -1 };
+	for (auto& x : mIngroupIds)
+	{
+		const auto& ui = mGlobaler.getUnitInfo(x);
+		ltcorner.first = min(ltcorner.first, (int)ui.mX);
+		rbcorner.first = max(rbcorner.first, (int)ui.mX);
+		ltcorner.second = min(ltcorner.second, (int)ui.mY);
+		rbcorner.second = max(rbcorner.second, (int)ui.mY);
+	}
+	ltcorner.first = ltcorner.first / 16;
+	ltcorner.second = ltcorner.second / 16;
+	rbcorner.first = rbcorner.first / 16;
+	rbcorner.second = rbcorner.second / 16;
+
+	return { ltcorner, rbcorner };
+}
+
+xypoint MyUnitGroup::getMovingVector() const
+{
+	return mMovingVector;
+}
+
+VehicleType MyUnitGroup::getVehicleType() const
+{
+	return mVehicleType;
 }
 
 double MyUnitGroup::getGroupAngle()

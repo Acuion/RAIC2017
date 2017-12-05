@@ -1,4 +1,10 @@
 #include "MyGlobalInfoStorer.h"
+#include "MyUnitGroup.h"
+
+MyGlobalInfoStorer::MyGlobalInfoStorer()
+{
+	mCellOccup.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+}
 
 void MyGlobalInfoStorer::processUpdates(const vector<VehicleUpdate>& vu)
 {
@@ -66,6 +72,50 @@ void MyGlobalInfoStorer::updateFacilities(const vector<Facility>& fs, int curren
 void MyGlobalInfoStorer::setMyId(int id)
 {
 	mMyId = id;
+}
+
+void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups)
+{
+	for (auto& y : mCellOccup)
+		for (auto& x : y)
+			x = 0;
+
+	for (auto& x : mOurVehicles)
+	{
+		int cx = x.second.mX / 16;
+		int cy = x.second.mY / 16;
+		mCellOccup[cx][cy] = 1000;
+	}
+	for (auto& x : mEnemyVehicles)
+	{
+		int cx = x.second.mX / 16;
+		int cy = x.second.mY / 16;
+		mCellOccup[cx][cy] = 1000;
+	}
+
+	for (auto& q : groups)
+	{
+		q->removeDestroyed();
+		if (q->getGroupIdList().size())
+		{
+			xypoint mv = q->getMovingVector();
+			pair<xypoint, xypoint> aabb = q->getGridedAabb();
+
+			aabb.first.first += mv.first * 2;
+			aabb.first.second += mv.second * 2;
+			aabb.second.first += mv.first * 2;
+			aabb.second.second += mv.second * 2;
+
+			for (int y = aabb.first.second; y <= aabb.second.second; ++y)
+				for (int x = aabb.first.first; x <= aabb.second.first; ++x)
+					mCellOccup[x][y] = q->getGroupId();
+		}
+	}
+}
+
+int MyGlobalInfoStorer::getCellOccup(int x, int y) const
+{
+	return mCellOccup[x][y];
 }
 
 map<int, FacilityBasicInfo>& MyGlobalInfoStorer::getOurFacilities()
