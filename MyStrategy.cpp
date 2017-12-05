@@ -860,7 +860,7 @@ MyStrategy::MyStrategy()
 		else
 			thisGroup.smartMoveTo(nearestEnemyStruct, move, world);
 
-		if (thisGroup.getVehicleType() != VehicleType::ARRV)
+		if (thisGroup.getTag() == "noob")
 		{
 			lookTo = nearestEnemy;
 
@@ -932,6 +932,7 @@ MyStrategy::MyStrategy()
 							auto noobs = createGroup(move, world, PI / 2);
 							noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mSmartChaseRound2, false);
 							noobs->setVehicleType(x.second.mCurrentlyConstructing);
+							noobs->setTag("noob");
 							unlockMacroInterruptions();
 						});
 					});
