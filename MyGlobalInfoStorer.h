@@ -38,8 +38,9 @@ public:
 	void processNews(const vector<Vehicle>& startVehicleInfo, int myPlayerId);
 	void updateFacilities(const vector<Facility>& fs, int currentTick);
 	void setMyId(int id);
-	void buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups);
+	void buildMaps(vector<shared_ptr<MyUnitGroup>> groups);
 
+	double getNukeValueAtCell(int x, int y) const;
 	int getCellOccupLand(int x, int y) const;
 	int getCellOccupAir(int x, int y) const;
 	map<int, FacilityBasicInfo>& getOurFacilities();
@@ -59,5 +60,6 @@ private:
 	map<int, bool> mAllyMovedThisTurn;
 	map<int, VehicleBasicInfo> mOurVehicles, mEnemyVehicles;
 	map<int, FacilityBasicInfo> mOurFacilities;
-	vector<vector<int>> mCellOccupLand, mCellOccupAir;
+	vector<vector<int>> mCellOccupLand, mCellOccupAir, mCellDangerAir, mCellDangerLand;
+	vector<vector<double>> mNukeValue;
 };

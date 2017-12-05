@@ -25,7 +25,7 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 
 	for (auto& u : mGlobaler.getOurVehicles())
 	{
-		xypoint gridedPos = {round(u.second.mX / 4) * 4, round(u.second.mY / 4) * 4};
+		xypoint gridedPos = {u.second.mX / 16, u.second.mY / 16};
 		double r = 0;
 		bool air = false;
 		switch (u.second.mType)
@@ -77,11 +77,11 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		}
 		mdf = 0.6; // todo
 		r *= mdf;
-		r = floor(r / 4) * 4;
+		r /= 16;
 
-		for (int x = gridedPos.first - r; x <= gridedPos.first + r; x += 16)
-			for (int y = gridedPos.second - r; y <= gridedPos.second + r; y += 16)
-				if ((x - gridedPos.first) * (x - gridedPos.first) + (y - gridedPos.second) * (y - gridedPos.second) <= r * r)
+		for (int x = gridedPos.first - r; x <= gridedPos.first + r; ++x)
+			for (int y = gridedPos.second - r; y <= gridedPos.second + r; ++y)
+				if (x >= 0 && y >= 0 && x < 64 && y < 64 && (x - gridedPos.first) * (x - gridedPos.first) + (y - gridedPos.second) * (y - gridedPos.second) <= r * r)
 				{
 					nukePlaces.insert({x, y});
 					ptid[{x, y}] = u.first;
@@ -93,21 +93,7 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 
 	for (auto& np : nukePlaces)
 	{
-		double score = 0;
-		for (auto& u : mGlobaler.getEnemyVehicles())
-		{
-			double dist = sqrt(sq(np.first - u.second.mX) + sq(np.second - u.second.mY));
-			if (dist > 50)
-				continue;
-			score += (99 - 99 * (dist / 50));
-		}
-		for (auto& u : mGlobaler.getOurVehicles())
-		{
-			double dist = sqrt(sq(np.first - u.second.mX) + sq(np.second - u.second.mY));
-			if (dist > 50)
-				continue;
-			score -= (99 - 99 * (dist / 50)) * 0.7;
-		}
+		const double score = mGlobaler.getNukeValueAtCell(np.first, np.second);
 		if (score > bestscore)
 		{
 			bestscore = score;
@@ -115,17 +101,20 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		}
 	}
 
+	cout << bestscore << endl;
+
 	static double nukeAttempts = 0;
-	if (bestscore > 0.3)
+	if (bestscore > 30)
 	{
 		nukeAttempts++;
-		if (nukeAttempts < 50)
+		if (nukeAttempts < 20)
 			return false;
 		move.setAction(ActionType::TACTICAL_NUCLEAR_STRIKE);
 		move.setVehicleId(ptid[bestnp]);
-		move.setX(bestnp.first);
-		move.setY(bestnp.second);
+		move.setX(bestnp.first * 16);
+		move.setY(bestnp.second * 16); // todo: 16 -> gridsize
 		mLastNuke = world.getTickIndex();
+		cout << "boom" << endl;
 		return true;
 	}
 
@@ -625,7 +614,6 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 	mGlobaler.processNews(world.getNewVehicles(), me.getId());
 	mGlobaler.processUpdates(world.getVehicleUpdates());
 	mGlobaler.updateFacilities(world.getFacilities(), world.getTickIndex());
-	mGlobaler.buildObstacleMap(mGroupActors);
 
 	if (world.getTickIndex() == 0)
 	{
@@ -668,6 +656,8 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 
 	if (world.getTickIndex() % 5 == 0)
 	{
+		mGlobaler.buildMaps(mGroupActors);
+
 		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
 			return;
 
@@ -879,6 +869,8 @@ MyStrategy::MyStrategy()
 
 		if (thisGroup.getVehicleType() != VehicleType::ARRV)
 		{
+			lookTo = nearestEnemy;
+
 			const auto absAnglesDiff = [](double a, double b)
 			{
 				double diff = min(abs(a - b), 2 * PI - abs(a - b));

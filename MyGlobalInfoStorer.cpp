@@ -1,10 +1,15 @@
 #include "MyGlobalInfoStorer.h"
 #include "MyUnitGroup.h"
 
+#define sq(x) ((x)*(x))
+
 MyGlobalInfoStorer::MyGlobalInfoStorer()
 {
 	mCellOccupLand.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
 	mCellOccupAir.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+	mCellDangerLand.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+	mCellDangerAir.resize(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+	mNukeValue.resize(1024 / 16 + 1, vector<double>(1024 / 16 + 1));
 }
 
 void MyGlobalInfoStorer::processUpdates(const vector<VehicleUpdate>& vu)
@@ -75,7 +80,7 @@ void MyGlobalInfoStorer::setMyId(int id)
 	mMyId = id;
 }
 
-void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups)
+void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
 {
 	for (auto& y : mCellOccupLand)
 		for (auto& x : y)
@@ -93,6 +98,30 @@ void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups
 		else
 			mCellOccupLand[cx][cy] = 1000;
 	}
+
+	for (int y = 0; y < 64; ++y)
+		for (int x = 0; x < 64; ++x)
+		{
+			double nukeScore = 0;
+			for (auto& u : getEnemyVehicles())
+			{
+				double dist = sqrt(sq(x * 16 - u.second.mX) + sq(y * 16 - u.second.mY));
+				if (dist <= 50)
+				{
+					nukeScore += (99 - 99 * (dist / 50));
+				}
+			}
+			for (auto& u : getOurVehicles())
+			{
+				double dist = sqrt(sq(x * 16 - u.second.mX) + sq(y * 16 - u.second.mY));
+				if (dist <= 50)
+				{
+					nukeScore -= (99 - 99 * (dist / 50)) * 0.7;
+				}
+			}
+			mNukeValue[x][y] = nukeScore;
+		}
+
 	/*for (auto& x : mEnemyVehicles)
 	{
 		int cx = x.second.mX / 16;
@@ -116,6 +145,8 @@ void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups
 			for (int y = aabb.first.second; y <= aabb.second.second; ++y)
 				for (int x = aabb.first.first; x <= aabb.second.first; ++x)
 				{
+					if (x < 0 || x >= 64 || y < 0 || y >= 64)
+						continue;
 					if (q->getVehicleType() == VehicleType::HELICOPTER || q->getVehicleType() == VehicleType::FIGHTER)
 						mCellOccupAir[x][y] = q->getGroupId();
 					else
@@ -123,6 +154,11 @@ void MyGlobalInfoStorer::buildObstacleMap(vector<shared_ptr<MyUnitGroup>> groups
 				}
 		}
 	}
+}
+
+double MyGlobalInfoStorer::getNukeValueAtCell(int x, int y) const
+{
+	return mNukeValue[x][y];
 }
 
 int MyGlobalInfoStorer::getCellOccupLand(int x, int y) const
