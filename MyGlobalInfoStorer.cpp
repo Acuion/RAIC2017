@@ -1,5 +1,6 @@
 #include "MyGlobalInfoStorer.h"
 #include "MyUnitGroup.h"
+#include <cmath>
 
 #define sq(x) ((x)*(x))
 

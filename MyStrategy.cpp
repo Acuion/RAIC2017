@@ -671,7 +671,7 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 		else
 		{
 			mMacroConditionalQueue.push_back({
-				[=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 500; }, mNoobsToTheFight
+				[=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 250; }, mNoobsToTheFight
 			});
 			auto pushVehicleGroup = [this](VehicleType vt)
 			{			
