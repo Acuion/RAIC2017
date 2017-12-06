@@ -804,13 +804,8 @@ MyStrategy::MyStrategy()
 	};
 	mSmartChaseRound2 = GRVALFHDR
 	{
-		if (thisGroup.getTag() == "noob")
-		cout << "noob move" << endl;
 		xypoint theCenter = thisGroup.getCenterOfGroup();
-		xypoint lookTo; // todo
-
-		//todo: карта опасности? куда ехать
-		// для каждого типа своя задача
+		xypoint lookTo;
 
 		bool land = true;
 		switch (thisGroup.getVehicleType())
@@ -829,17 +824,8 @@ MyStrategy::MyStrategy()
 			break;
 		}
 
-		xypoint nearestEnemy = { 512, 512 };
-		double currUnitDist = 1e9;
-		for (auto& x : mGlobaler.getEnemyVehicles())
-		{
-			double dist = hypot(x.second.mX - theCenter.first, x.second.mY - theCenter.second);
-			if (dist < currUnitDist)
-			{
-				nearestEnemy = { x.second.mX, x.second.mY };
-				currUnitDist = dist;
-			}
-		}
+		xypoint nearestEnemy = thisGroup.getClosestEnemy();
+		double currUnitDist = hypot(theCenter.first - nearestEnemy.first, theCenter.second - nearestEnemy.second);
 
 		set<pair<double, xypoint>> nearestStructures;
 		for (auto& x : world.getFacilities())
@@ -862,14 +848,38 @@ MyStrategy::MyStrategy()
 
 		thisGroup.buildMoveMap();
 
-		if (!nearestStructures.size() && thisGroup.getVehicleType() != VehicleType::ARRV)
-			thisGroup.smartMoveTo(nearestEnemy, move, world);
-		else
+		//if (!nearestStructures.size() && thisGroup.getVehicleType() != VehicleType::ARRV)
+		//	thisGroup.smartMoveTo(nearestEnemy, move, world);
+		//else
 		{
 			while (nearestStructures.size() && !thisGroup.smartMoveTo(nearestStructures.begin()->second, move, world))
 				nearestStructures.erase(nearestStructures.begin());
-			if (!nearestStructures.size() && thisGroup.getTag() == "noob")
-				cout << "failed" << endl;
+			if (!nearestStructures.size() && (mGlobaler.getCellDangerAir(theCenter.first / 16, theCenter.second / 16) > 2000
+				|| mGlobaler.getCellDangerLand(theCenter.first / 16, theCenter.second / 16) > 2000) )
+			{
+				if (theCenter.first > 512)
+				{
+					if (theCenter.second > 512)
+					{
+						thisGroup.move({ 1024 - theCenter.first, 1024 - theCenter.second }, false, move, world);
+					}
+					else
+					{
+						thisGroup.move({ 1024 - theCenter.first, 0 - theCenter.second }, false, move, world);
+					}
+				}
+				else
+				{
+					if (theCenter.second > 512)
+					{
+						thisGroup.move({ 0 - theCenter.first, 1024 - theCenter.second }, false, move, world);
+					}
+					else
+					{
+						thisGroup.move({ 0 - theCenter.first, 0 - theCenter.second }, false, move, world);
+					}
+				}
+			}
 		}
 
 		if (thisGroup.getGroupRadius() > 47)
@@ -903,11 +913,11 @@ MyStrategy::MyStrategy()
 				move.setY(theCenter.second);
 				if (plusdiff < minusdiff)
 				{
-					move.setAngle(rotateConst);
+					move.setAngle(angleDiff);
 				}
 				else
 				{
-					move.setAngle(-rotateConst);
+					move.setAngle(-angleDiff);
 				}
 				thisGroup.setGroupAngle(thisGroup.getGroupAngle() + move.getAngle());
 				thisGroup.pushToConditionalQueue(CondQueueCondition::AllUnitStopped, mSmartChaseRound2, false);
@@ -925,7 +935,7 @@ MyStrategy::MyStrategy()
 		mLastNoobsToFight = world.getTickIndex();
 		for (auto& x : mGlobaler.getOurFacilities())
 		{
-			if (x.second.mType == FacilityType::VEHICLE_FACTORY && world.getTickIndex() - x.second.mCapturedAt > 600)
+			if (x.second.mType == FacilityType::VEHICLE_FACTORY && world.getTickIndex() - x.second.mCapturedAt > 1200)
 			{
 				mMacroExecutionQueue.push_back(VALFHDR
 				{
@@ -950,10 +960,10 @@ MyStrategy::MyStrategy()
 						pushToTheFrontOfQueue(VALFHDR
 						{
 							auto noobs = createGroup(move, world, PI / 2);
-							noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mSmartChaseRound2, false);
+							noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, GRVALFHDR{ thisGroup.scale(thisGroup.getCenterOfGroup(), 0.1, move, world); }, false);
+							noobs->pushToConditionalQueue(CondQueueCondition::AllUnitStopped, mSmartChaseRound2, false);
 							noobs->setVehicleType(x.second.mCurrentlyConstructing);
 							noobs->setTag("noob");
-							cout << "newnoob" << endl;
 							unlockMacroInterruptions();
 						});
 					});
@@ -962,7 +972,7 @@ MyStrategy::MyStrategy()
 		}
 
 		mMacroConditionalQueue.push_back({
-			[=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 1700; }, mNoobsToTheFight
+			[=](const World& world) { return world.getTickIndex() - mLastNoobsToFight > 3000; }, mNoobsToTheFight
 		});
 	};
 }

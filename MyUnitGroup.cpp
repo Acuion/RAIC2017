@@ -97,6 +97,33 @@ void MyUnitGroup::buildMoveMap()
 	const int dx[] = { 0,0,1,-1,1,1,-1,-1 };
 	const int dy[] = { 1,-1,0,0,1,-1,1,-1 };
 
+	bool air = false;
+	if (mVehicleType == VehicleType::HELICOPTER || mVehicleType == VehicleType::FIGHTER)
+		air = true;
+	int groupDefValue = 4 * mIngroupIds.size();
+	for (auto& x : mIngroupIds)
+	{
+		auto ui = mGlobaler.getUnitInfo(x);
+		switch (ui.mType)
+		{
+		case VehicleType::ARRV:
+			groupDefValue += 5;
+			break;
+		case VehicleType::FIGHTER:
+			groupDefValue += 65;
+			break;
+		case VehicleType::HELICOPTER:
+			groupDefValue += 75;
+			break;
+		case VehicleType::IFV:
+			groupDefValue += 75;
+			break;
+		case VehicleType::TANK:
+			groupDefValue += 65;
+			break;
+		}
+	}
+
 	while (!q.empty())
 	{
 		const auto t = q.front();
@@ -105,7 +132,8 @@ void MyUnitGroup::buildMoveMap()
 		for (int k = 0; k < 8; ++k)
 		{
 			xypoint nxt = { t.first + dx[k], t.second + dy[k] };
-			if (pointIsInBounds(nxt, width, height))
+			if (pointIsInBounds(nxt, width, height)
+				&& (air ? mGlobaler.getCellDangerAir(nxt.first, nxt.second) : mGlobaler.getCellDangerLand(nxt.first, nxt.second)) <= groupDefValue)
 			{
 				if (mMoveParent[nxt.first][nxt.second].first != -1)
 					continue;
@@ -239,7 +267,7 @@ VehicleType MyUnitGroup::getVehicleType() const
 	return mVehicleType;
 }
 
-double MyUnitGroup::getGroupAngle()
+double MyUnitGroup::getGroupAngle() const
 {
 	return mGroupAngle;
 }

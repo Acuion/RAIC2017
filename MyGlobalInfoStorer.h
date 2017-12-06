@@ -43,6 +43,8 @@ public:
 	double getNukeValueAtCell(int x, int y) const;
 	int getCellOccupLand(int x, int y) const;
 	int getCellOccupAir(int x, int y) const;
+	int getCellDangerLand(int x, int y) const;
+	int getCellDangerAir(int x, int y) const;
 	map<int, FacilityBasicInfo>& getOurFacilities();
 	const map<int, VehicleBasicInfo>& getOurVehicles() const;
 	const map<int, VehicleBasicInfo>& getEnemyVehicles() const;

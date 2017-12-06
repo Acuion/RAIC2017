@@ -99,6 +99,9 @@ void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
 			mCellOccupLand[cx][cy] = 1000;
 	}
 
+	mCellDangerLand.assign(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+	mCellDangerAir.assign(1024 / 16 + 1, vector<int>(1024 / 16 + 1, 0));
+
 	for (int y = 0; y < 64; ++y)
 		for (int x = 0; x < 64; ++x)
 		{
@@ -109,6 +112,62 @@ void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
 				if (dist <= 50)
 				{
 					nukeScore += (99 - 99 * (dist / 50));
+				}
+
+				//mCellDangerAir
+				//mCellDangerLand
+
+				switch (u.second.mType)
+				{
+				case VehicleType::ARRV:
+					if (dist < 32)
+					{
+						if (mCellDangerAir[x][y] > 0)
+							mCellDangerAir[x][y] += 10;
+						if (mCellDangerLand[x][y] > 0)
+							mCellDangerLand[x][y] += 10;
+					}
+					break;
+				case VehicleType::FIGHTER:
+					if (dist < 32)
+						mCellDangerAir[x][y] += 100;
+					else if (dist < 128)
+						mCellDangerAir[x][y] += 100 / 3;
+					break;
+				case VehicleType::HELICOPTER:
+					if (dist < 32)
+					{
+						mCellDangerAir[x][y] += 80;
+						mCellDangerLand[x][y] += 100;
+					}
+					else if (dist < 256)
+					{
+						mCellDangerAir[x][y] += 80 / 3;
+						mCellDangerLand[x][y] += 100 / 3;
+					}
+					break;
+				case VehicleType::IFV:
+					if (dist < 32)
+					{
+						mCellDangerAir[x][y] += 80;
+						mCellDangerLand[x][y] += 90;
+					}
+					else if (dist < 256)
+					{
+						mCellDangerAir[x][y] += 80 / 3;
+						mCellDangerLand[x][y] += 90 / 3;
+					}
+					break;
+				case VehicleType::TANK:
+					if (dist < 32)
+					{
+						mCellDangerLand[x][y] += 100;
+					}
+					else if (dist < 256)
+					{
+						mCellDangerLand[x][y] += 100 / 3;
+					}
+					break;
 				}
 			}
 			for (auto& u : getOurVehicles())
@@ -169,6 +228,16 @@ int MyGlobalInfoStorer::getCellOccupLand(int x, int y) const
 int MyGlobalInfoStorer::getCellOccupAir(int x, int y) const
 {
 	return mCellOccupAir[x][y];
+}
+
+int MyGlobalInfoStorer::getCellDangerLand(int x, int y) const
+{
+	return mCellDangerLand[x][y];
+}
+
+int MyGlobalInfoStorer::getCellDangerAir(int x, int y) const
+{
+	return mCellDangerAir[x][y];
 }
 
 map<int, FacilityBasicInfo>& MyGlobalInfoStorer::getOurFacilities()

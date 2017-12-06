@@ -40,7 +40,7 @@ public:
 	pair<xypoint, xypoint> getGridedAabb() const;
 	xypoint getMovingVector() const;
 	VehicleType getVehicleType() const;
-	double getGroupAngle();
+	double getGroupAngle() const;
 	int getGroupActsCount() const;
 	int getGroupId() const;
 	const string& getTag() const;
