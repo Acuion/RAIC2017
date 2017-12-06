@@ -902,7 +902,7 @@ MyStrategy::MyStrategy()
 			xypoint gotop = { en.first + cos(angle) * 110, en.second + sin(angle) * 110 };
 
 			bool badgotop = false;
-			if (gotop.first < 0 || gotop.second < 0 || gotop.first > 1024 || gotop.second > 1024)
+			if (gotop.first < 0 || gotop.second < 0 || gotop.first >= 1024 || gotop.second >= 1024)
 			{
 				badgotop = true;
 			}
