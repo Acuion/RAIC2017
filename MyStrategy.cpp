@@ -212,8 +212,61 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 		else
 		{
 			move.setAction(ActionType::CLEAR_AND_SELECT);
-			move.setRight(1024);
-			move.setBottom(1024);
+			xypoint lu = mPanicPoint, rb = mPanicPoint;
+			lu.first -= 50;
+			lu.second -= 50;
+			rb.first += 50;
+			rb.second += 50;
+
+			bool ok = false;
+			while (!ok)
+			{
+				ok = true;
+				for (auto& x : mGroupActors)
+				{
+					auto aabb = x->getGridedAabb();
+					aabb.first.first *= 16;
+					aabb.first.second *= 16;
+					aabb.second.first *= 16;
+					aabb.second.second *= 16;
+
+					auto pointInside = [&](xypoint pt)
+					{
+						return pt.first >= aabb.first.first && pt.second >= aabb.first.second && pt.second <= aabb.second.second && pt.second <= aabb.second.second;
+					};
+
+					if (!pointInside(lu) && !pointInside(rb) && !pointInside({lu.first, rb.second}) && !pointInside({rb.first, lu.second}))
+						continue;
+
+					if (aabb.first.first < lu.first)
+					{
+						ok = false;
+						lu.first = aabb.first.first;
+					}
+					if (aabb.first.second < lu.second)
+					{
+						ok = false;
+						lu.second = aabb.first.second;
+					}
+
+
+					if (aabb.second.first > rb.first)
+					{
+						ok = false;
+						rb.first = aabb.second.first;
+					}
+					if (aabb.second.second > rb.second)
+					{
+						ok = false;
+						rb.second = aabb.second.second;
+					}
+				}
+			}
+
+			move.setLeft(lu.first - 5);
+			move.setTop(lu.second - 5);
+			move.setRight(rb.first + 5);
+			move.setBottom(rb.second + 5);
 			mPanicSelection = true;
 			MyUnitGroup::dropSelection();
 		}
@@ -855,28 +908,28 @@ MyStrategy::MyStrategy()
 			while (nearestStructures.size() && !thisGroup.smartMoveTo(nearestStructures.begin()->second, move, world))
 				nearestStructures.erase(nearestStructures.begin());
 			if (!nearestStructures.size() && (mGlobaler.getCellDangerAir(theCenter.first / 16, theCenter.second / 16) > 2000
-				|| mGlobaler.getCellDangerLand(theCenter.first / 16, theCenter.second / 16) > 2000) )
+				|| mGlobaler.getCellDangerLand(theCenter.first / 16, theCenter.second / 16) > 2500) )
 			{
 				if (theCenter.first > 512)
 				{
 					if (theCenter.second > 512)
 					{
-						thisGroup.move({ 1024 - theCenter.first, 1024 - theCenter.second }, false, move, world);
+						thisGroup.move({ 1024 - theCenter.first, 1024 - theCenter.second }, true, move, world);
 					}
 					else
 					{
-						thisGroup.move({ 1024 - theCenter.first, 0 - theCenter.second }, false, move, world);
+						thisGroup.move({ 1024 - theCenter.first, 0 - theCenter.second }, true, move, world);
 					}
 				}
 				else
 				{
 					if (theCenter.second > 512)
 					{
-						thisGroup.move({ 0 - theCenter.first, 1024 - theCenter.second }, false, move, world);
+						thisGroup.move({ 0 - theCenter.first, 1024 - theCenter.second }, true, move, world);
 					}
 					else
 					{
-						thisGroup.move({ 0 - theCenter.first, 0 - theCenter.second }, false, move, world);
+						thisGroup.move({ 0 - theCenter.first, 0 - theCenter.second }, true, move, world);
 					}
 				}
 			}
