@@ -28,7 +28,8 @@ public:
 	bool mayBeInterrupted();
 
 	void removeDestroyed();
-	void smartMoveTo(dxypoint point, Move& move, const World& world);
+	void buildMoveMap();
+	bool smartMoveTo(dxypoint point, Move& move, const World& world);
 	void move(dxypoint vector, bool saveFormation, Move& move, const World& world);
 	void scale(dxypoint point, double factor, Move& move, const World& world);
 	void forcedSelect(Move& move);
@@ -59,6 +60,9 @@ private:
 		function<void(Move&, const World&, MyUnitGroup&)> mFunc;
 		bool mRecursive;
 	};
+	
+	bool pointIsInBounds(xypoint point, int width, int height);
+	bool groupAtPointDoesntIntersect(xypoint point, int width, int height, xypoint ltcorner, xypoint rbcorner);
 
 	static int sCurrentlySelectedGroup, sGroupsCount;
 
@@ -82,4 +86,5 @@ private:
 	double mGroupAngle;
 
 	xypoint mMovingVector;
+	vector<vector<xypoint>> mMoveParent;
 };

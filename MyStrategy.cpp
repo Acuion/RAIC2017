@@ -101,8 +101,6 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		}
 	}
 
-	cout << bestscore << endl;
-
 	static double nukeAttempts = 0;
 	if (bestscore > 30)
 	{
@@ -114,7 +112,6 @@ bool MyStrategy::nukeEmAll(const Player& me, const World& world, Move& move)
 		move.setX(bestnp.first * 16);
 		move.setY(bestnp.second * 16); // todo: 16 -> gridsize
 		mLastNuke = world.getTickIndex();
-		cout << "boom" << endl;
 		return true;
 	}
 
@@ -807,6 +804,8 @@ MyStrategy::MyStrategy()
 	};
 	mSmartChaseRound2 = GRVALFHDR
 	{
+		if (thisGroup.getTag() == "noob")
+		cout << "noob move" << endl;
 		xypoint theCenter = thisGroup.getCenterOfGroup();
 		xypoint lookTo; // todo
 
@@ -842,23 +841,44 @@ MyStrategy::MyStrategy()
 			}
 		}
 
-		xypoint nearestEnemyStruct = { 1e9, 1e9 };
-		double currStructDist = 1e9;
+		set<pair<double, xypoint>> nearestStructures;
 		for (auto& x : world.getFacilities())
 			if (x.getOwnerPlayerId() != mGlobaler.getMyId())
 			{
-				double dist = hypot(x.getLeft() + 32 - theCenter.first, x.getTop() + 32 - theCenter.second);
-				if (dist < currStructDist)
+				vector<xypoint> points;
+				points.push_back({x.getLeft(), x.getTop()});
+				points.push_back({x.getLeft() + 32, x.getTop()});
+				points.push_back({x.getLeft(), x.getTop() + 32});
+				points.push_back({x.getLeft() + 32, x.getTop() + 32});
+				for (auto& pt : points)
 				{
-					nearestEnemyStruct = { x.getLeft() + 32, x.getTop() + 32 };
-					currStructDist = dist;
+					if (pt.first >= 0 && pt.second >= 0 && pt.first < 1024 && pt.second < 1024)
+					{
+						double dist = hypot(pt.first - theCenter.first, pt.second - theCenter.second);
+						nearestStructures.insert({ dist, pt });
+					}
 				}
 			}
 
-		if (currStructDist > 5000 && thisGroup.getVehicleType() != VehicleType::ARRV)
+		thisGroup.buildMoveMap();
+
+		if (!nearestStructures.size() && thisGroup.getVehicleType() != VehicleType::ARRV)
 			thisGroup.smartMoveTo(nearestEnemy, move, world);
 		else
-			thisGroup.smartMoveTo(nearestEnemyStruct, move, world);
+		{
+			while (nearestStructures.size() && !thisGroup.smartMoveTo(nearestStructures.begin()->second, move, world))
+				nearestStructures.erase(nearestStructures.begin());
+			if (!nearestStructures.size() && thisGroup.getTag() == "noob")
+				cout << "failed" << endl;
+		}
+
+		if (thisGroup.getGroupRadius() > 47)
+		{
+			move.setAction(ActionType::SCALE);
+			move.setX(theCenter.first);
+			move.setY(theCenter.second);
+			move.setFactor(0.1);
+		}
 
 		if (thisGroup.getTag() == "noob")
 		{
@@ -933,6 +953,7 @@ MyStrategy::MyStrategy()
 							noobs->pushToConditionalQueue(CondQueueCondition::NoCondition, mSmartChaseRound2, false);
 							noobs->setVehicleType(x.second.mCurrentlyConstructing);
 							noobs->setTag("noob");
+							cout << "newnoob" << endl;
 							unlockMacroInterruptions();
 						});
 					});

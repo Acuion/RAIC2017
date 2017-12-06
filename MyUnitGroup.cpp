@@ -80,107 +80,79 @@ void MyUnitGroup::removeDestroyed()
 			++it;
 }
 
-void MyUnitGroup::smartMoveTo(dxypoint point, Move& move, const World& world)
+void MyUnitGroup::buildMoveMap()
 {
 	auto aabb = getGridedAabb();
 	auto ltcorner = aabb.first;
 	auto rbcorner = aabb.second;
-	point.first = point.first / 16;
-	point.second = point.second / 16;
 
 	int width = rbcorner.first - ltcorner.first;
 	int height = rbcorner.second - ltcorner.second;
 
 	queue<xypoint> q;
-	vector<vector<xypoint>> used(1024 / 16, vector<xypoint>(1024 / 16, {-1, -1}));
-	used[ltcorner.first][ltcorner.second] = ltcorner;
+	mMoveParent.assign(1024 / 16, vector<xypoint>(1024 / 16, { -1, -1 }));
+	mMoveParent[ltcorner.first][ltcorner.second] = ltcorner;
 	q.push(ltcorner);
 
-	const int dx[] = {0,0,1,-1,1,1,-1,-1 };
-	const int dy[] = {1,-1,0,0,1,-1,1,-1 };
-
-	const auto pointIsEmpty = [&](int x, int y)
-	{
-		int co;
-		if (getVehicleType() == VehicleType::HELICOPTER || getVehicleType() == VehicleType::FIGHTER)
-			co = mGlobaler.getCellOccupAir(x, y);
-		else
-			co = mGlobaler.getCellOccupLand(x, y);
-		if (0 == co || getGroupId() == co)
-			return true;
-		if (ltcorner.first <= x && ltcorner.second <= y && rbcorner.first >= x && rbcorner.second >= y)
-			return true;
-		return false;
-	};
-
-	const auto groupAtPointDoesntIntersect = [&](xypoint nxt)
-	{
-		bool bad = false;
-		for (int i = 0; i < width; ++i)
-		{
-			if (!pointIsEmpty(nxt.first + i, nxt.second) || !pointIsEmpty(nxt.first + i, nxt.second + height))
-			{
-				bad = true;
-				break;
-			}
-		}
-		for (int i = 0; i < height; ++i)
-		{
-			if (!pointIsEmpty(nxt.first, nxt.second + i) || !pointIsEmpty(nxt.first + width, nxt.second + i))
-			{
-				bad = true;
-				break;
-			}
-		}
-		return !bad;
-	};
-
-	const auto pointIsInBounds = [&](xypoint nxt)
-	{
-		return nxt.first >= 0 && nxt.second >= 0 && nxt.first < 64 - width && nxt.second < 64 - height;
-	};
+	const int dx[] = { 0,0,1,-1,1,1,-1,-1 };
+	const int dy[] = { 1,-1,0,0,1,-1,1,-1 };
 
 	while (!q.empty())
 	{
-		auto t = q.front();
+		const auto t = q.front();
 		q.pop();
-
-		if (t.first <= point.first && t.second <= point.second && t.first + width >= point.first && t.second + height >= point.second)
-		{
-			xypoint lastDiff;
-			int countmv = 0;
-			while (used[t.first][t.second] != ltcorner)
-			{
-				t = used[t.first][t.second];
-			}
-			int i = 0;
-			xypoint moveTo = { ltcorner.first, ltcorner.second };
-			xypoint vector = { t.first - ltcorner.first, t.second - ltcorner.second };
-			if (vector.first != 0 || vector.second != 0)
-				for (i = 0; pointIsInBounds(moveTo) && groupAtPointDoesntIntersect(moveTo); ++i)
-				{
-					moveTo.first += vector.first;
-					moveTo.second += vector.second;
-				}
-			mMovingVector = vector;
-			this->move({vector.first * i * 16, vector.second * i * 16 }, true, move, world);
-			break;
-		}
 
 		for (int k = 0; k < 8; ++k)
 		{
 			xypoint nxt = { t.first + dx[k], t.second + dy[k] };
-			if (pointIsInBounds(nxt))
+			if (pointIsInBounds(nxt, width, height))
 			{
-				if (used[nxt.first][nxt.second].first != -1)
+				if (mMoveParent[nxt.first][nxt.second].first != -1)
 					continue;
-				if (!groupAtPointDoesntIntersect(nxt))
+				if (!groupAtPointDoesntIntersect(nxt, width, height, ltcorner, rbcorner))
 					continue;
 				q.push(nxt);
-				used[nxt.first][nxt.second] = t;
+				mMoveParent[nxt.first][nxt.second] = t;
 			}
 		}
 	}
+}
+
+bool MyUnitGroup::smartMoveTo(dxypoint point, Move& move, const World& world)
+{
+	auto aabb = getGridedAabb();
+	auto ltcorner = aabb.first;
+	auto rbcorner = aabb.second;
+
+	int width = rbcorner.first - ltcorner.first;
+	int height = rbcorner.second - ltcorner.second;
+
+	point.first = point.first / 16;
+	point.second = point.second / 16;
+
+	if (mMoveParent[point.first][point.second].first != -1)
+	{
+		xypoint lastDiff;
+		int countmv = 0;
+		while (mMoveParent[point.first][point.second] != ltcorner)
+		{
+			point = mMoveParent[point.first][point.second];
+		}
+		int i = 0;
+		xypoint moveTo = { ltcorner.first, ltcorner.second };
+		xypoint vector = { point.first - ltcorner.first, point.second - ltcorner.second };
+		if (vector.first != 0 || vector.second != 0)
+			for (i = 0; pointIsInBounds(moveTo, width, height) && groupAtPointDoesntIntersect(moveTo, width, height, ltcorner, rbcorner); ++i)
+			{
+				moveTo.first += vector.first;
+				moveTo.second += vector.second;
+			}
+		mMovingVector = vector;
+		this->move({ vector.first * i * 16, vector.second * i * 16 }, true, move, world);
+		return true;
+	}
+
+	return false;
 }
 
 void MyUnitGroup::move(dxypoint vector, bool saveFormation, Move& move, const World& world)
@@ -191,9 +163,9 @@ void MyUnitGroup::move(dxypoint vector, bool saveFormation, Move& move, const Wo
 		turn = VALFHDR
 		{
 			move.setAction(ActionType::MOVE);
-		move.setX(vector.first);
-		move.setY(vector.second);
-		move.setMaxSpeed(getMaxSpeedOnVector(vector, world));
+			move.setX(vector.first);
+			move.setY(vector.second);
+			move.setMaxSpeed(getMaxSpeedOnVector(vector, world));
 		};
 	}
 	else
@@ -201,8 +173,8 @@ void MyUnitGroup::move(dxypoint vector, bool saveFormation, Move& move, const Wo
 		turn = VALFHDR
 		{
 			move.setAction(ActionType::MOVE);
-		move.setX(vector.first);
-		move.setY(vector.second);
+			move.setX(vector.first);
+			move.setY(vector.second);
 		};
 	}
 	turn(move, world);
@@ -361,6 +333,8 @@ MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStore
 	, mGroupActs(0)
 	, mGroupAngle(groupAngle)
 {
+	mMoveParent.resize(1024 / 16, vector<xypoint>(1024 / 16));
+
 	mGroupNumber = ++sGroupsCount;
 
 	for (auto& x : mGlobaler.getSelectedAllies())
@@ -368,6 +342,48 @@ MyUnitGroup::MyUnitGroup(Move& move, const World& world, const MyGlobalInfoStore
 
 	move.setAction(ActionType::ASSIGN);
 	move.setGroup(mGroupNumber);
+}
+
+bool MyUnitGroup::pointIsInBounds(xypoint point, int width, int height)
+{
+	return point.first >= 0 && point.second >= 0 && point.first < 64 - width && point.second < 64 - height;
+}
+
+bool MyUnitGroup::groupAtPointDoesntIntersect(xypoint point, int width, int height, xypoint ltcorner, xypoint rbcorner)
+{
+	const auto pointIsEmpty = [&](int x, int y)
+	{
+		int co;
+		if (getVehicleType() == VehicleType::HELICOPTER || getVehicleType() == VehicleType::FIGHTER)
+			co = mGlobaler.getCellOccupAir(x, y);
+		else
+			co = mGlobaler.getCellOccupLand(x, y);
+		if (0 == co || getGroupId() == co)
+			return true;
+		if (ltcorner.first <= x && ltcorner.second <= y && rbcorner.first >= x && rbcorner.second >= y)
+			return true;
+		return false;
+	};
+
+	bool bad = false;
+	for (int i = 0; i < width; ++i)
+	{
+		if (!pointIsEmpty(point.first + i, point.second) || !pointIsEmpty(point.first + i, point.second + height))
+		{
+			bad = true;
+			break;
+		}
+	}
+	for (int i = 0; i < height; ++i)
+	{
+		if (!pointIsEmpty(point.first, point.second + i) || !pointIsEmpty(point.first + width, point.second + i))
+		{
+			bad = true;
+			break;
+		}
+	}
+
+	return !bad;
 }
 
 double MyUnitGroup::getMaxSpeedOnVector(dxypoint vector, const World& world)
