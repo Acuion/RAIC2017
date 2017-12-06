@@ -181,13 +181,6 @@ void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
 			mNukeValue[x][y] = nukeScore;
 		}
 
-	/*for (auto& x : mEnemyVehicles)
-	{
-		int cx = x.second.mX / 16;
-		int cy = x.second.mY / 16;
-		mCellOccup[cx][cy] = 1000;
-	}*/
-
 	for (auto& q : groups)
 	{
 		q->removeDestroyed();

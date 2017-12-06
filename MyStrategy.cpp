@@ -232,7 +232,7 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 
 					auto pointInside = [&](xypoint pt)
 					{
-						return pt.first >= aabb.first.first && pt.second >= aabb.first.second && pt.second <= aabb.second.second && pt.second <= aabb.second.second;
+						return pt.first >= aabb.first.first && pt.second >= aabb.first.second && pt.first <= aabb.second.first && pt.second <= aabb.second.second;
 					};
 
 					if (!pointInside(lu) && !pointInside(rb) && !pointInside({lu.first, rb.second}) && !pointInside({rb.first, lu.second}))
@@ -272,12 +272,6 @@ bool MyStrategy::nukePanic(Move& move, const World& world)
 		}
 	}
 	return mPanic;
-	// todo: store selection! (or not, xm)
-	// calculate groups AABB
-	// select groups near the nuke
-	// scale out
-	// scale in
-	// restore selection! (or not, xm)
 }
 
 void MyStrategy::pushToTheFrontOfQueue(macroTurnPrototype func)
@@ -901,46 +895,61 @@ MyStrategy::MyStrategy()
 
 		thisGroup.buildMoveMap();
 
-		//if (!nearestStructures.size() && thisGroup.getVehicleType() != VehicleType::ARRV)
-		//	thisGroup.smartMoveTo(nearestEnemy, move, world);
-		//else
+		auto tocle = [&]()
+		{
+			auto en = thisGroup.getClosestEnemy();
+			double angle = atan2(theCenter.second - en.second, theCenter.first - en.first);
+			xypoint gotop = { en.first + cos(angle) * 110, en.second + sin(angle) * 110 };
+
+			bool badgotop = false;
+			if (gotop.first < 0 || gotop.second < 0 || gotop.first > 1024 || gotop.second > 1024)
+			{
+				badgotop = true;
+			}
+
+			if (!badgotop)
+			{
+				if (!thisGroup.smartMoveTo(gotop, move, world))
+				{
+					thisGroup.move({ gotop.first - theCenter.first, gotop.second - theCenter.second }, true, move, world);
+				}
+			}
+			else
+			{
+				thisGroup.move({ rand() % 10, rand() % 10 }, true, move, world);
+			}
+		};
+
+		if (thisGroup.getVehicleType() != VehicleType::HELICOPTER && thisGroup.getVehicleType() != VehicleType::FIGHTER)
 		{
 			while (nearestStructures.size() && !thisGroup.smartMoveTo(nearestStructures.begin()->second, move, world))
 				nearestStructures.erase(nearestStructures.begin());
-			if (!nearestStructures.size() && (mGlobaler.getCellDangerAir(theCenter.first / 16, theCenter.second / 16) > 2000
-				|| mGlobaler.getCellDangerLand(theCenter.first / 16, theCenter.second / 16) > 2500) )
+			if (!nearestStructures.size())
 			{
-				if (theCenter.first > 512)
-				{
-					if (theCenter.second > 512)
-					{
-						thisGroup.move({ 1024 - theCenter.first, 1024 - theCenter.second }, true, move, world);
-					}
-					else
-					{
-						thisGroup.move({ 1024 - theCenter.first, 0 - theCenter.second }, true, move, world);
-					}
-				}
-				else
-				{
-					if (theCenter.second > 512)
-					{
-						thisGroup.move({ 0 - theCenter.first, 1024 - theCenter.second }, true, move, world);
-					}
-					else
-					{
-						thisGroup.move({ 0 - theCenter.first, 0 - theCenter.second }, true, move, world);
-					}
-				}
+				tocle();
 			}
+		}
+		else
+		{
+			tocle();
 		}
 
 		if (thisGroup.getGroupRadius() > 47)
 		{
-			move.setAction(ActionType::SCALE);
-			move.setX(theCenter.first);
-			move.setY(theCenter.second);
-			move.setFactor(0.1);
+			if (world.getTickIndex() % 2)
+			{
+				move.setAction(ActionType::SCALE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				move.setFactor(0.1);
+			}
+			else
+			{
+				move.setAction(ActionType::ROTATE);
+				move.setX(theCenter.first);
+				move.setY(theCenter.second);
+				move.setAngle(PI);
+			}
 		}
 
 		if (thisGroup.getTag() == "noob")
