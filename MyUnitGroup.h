@@ -37,6 +37,7 @@ public:
 	void setGroupAngle(double angle);
 	void setVehicleType(VehicleType type);
 
+	double getDef() const;
 	pair<xypoint, xypoint> getGridedAabb() const;
 	xypoint getMovingVector() const;
 	VehicleType getVehicleType() const;
@@ -87,4 +88,5 @@ private:
 
 	xypoint mMovingVector;
 	vector<vector<xypoint>> mMoveParent;
+	double mGroupDefValue = 1;
 };

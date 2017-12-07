@@ -195,6 +195,14 @@ void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
 			aabb.second.first += mv.first * 2;
 			aabb.second.second += mv.second * 2;
 
+			if (q->getVehicleType() == VehicleType::FIGHTER)
+			{
+				aabb.first.first--;
+				aabb.first.second--;
+				aabb.second.first++;
+				aabb.second.second++;
+			}
+
 			for (int y = aabb.first.second; y <= aabb.second.second; ++y)
 				for (int x = aabb.first.first; x <= aabb.second.first; ++x)
 				{

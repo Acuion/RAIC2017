@@ -899,7 +899,26 @@ MyStrategy::MyStrategy()
 		{
 			auto en = thisGroup.getClosestEnemy();
 			double angle = atan2(theCenter.second - en.second, theCenter.first - en.first);
-			xypoint gotop = { en.first + cos(angle) * 110, en.second + sin(angle) * 110 };
+			double dist = 80;
+			if (thisGroup.getVehicleType() == VehicleType::FIGHTER)
+				dist = 110;
+
+			if (land)
+			{
+				if (thisGroup.getDef() >= mGlobaler.getCellDangerLand(en.first / 16, en.second / 16))
+				{
+					dist = 10;
+				}
+			}
+			else
+			{
+				if (thisGroup.getDef() >= mGlobaler.getCellDangerAir(en.first / 16, en.second / 16))
+				{
+					dist = 10;
+				}
+			}
+
+			xypoint gotop = { en.first + cos(angle) * dist, en.second + sin(angle) * dist };
 
 			bool badgotop = false;
 			if (gotop.first < 0 || gotop.second < 0 || gotop.first >= 1024 || gotop.second >= 1024)
@@ -936,7 +955,7 @@ MyStrategy::MyStrategy()
 
 		if (thisGroup.getGroupRadius() > 47)
 		{
-			if (world.getTickIndex() % 2)
+			if (world.getTickIndex() % 4)
 			{
 				move.setAction(ActionType::SCALE);
 				move.setX(theCenter.first);

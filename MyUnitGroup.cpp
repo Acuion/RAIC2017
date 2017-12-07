@@ -100,26 +100,26 @@ void MyUnitGroup::buildMoveMap()
 	bool air = false;
 	if (mVehicleType == VehicleType::HELICOPTER || mVehicleType == VehicleType::FIGHTER)
 		air = true;
-	int groupDefValue = 4 * mIngroupIds.size();
+	mGroupDefValue = 4 * mIngroupIds.size();
 	for (auto& x : mIngroupIds)
 	{
 		auto ui = mGlobaler.getUnitInfo(x);
 		switch (ui.mType)
 		{
 		case VehicleType::ARRV:
-			groupDefValue += 5;
+			mGroupDefValue += 5;
 			break;
 		case VehicleType::FIGHTER:
-			groupDefValue += 65;
+			mGroupDefValue += 65;
 			break;
 		case VehicleType::HELICOPTER:
-			groupDefValue += 75;
+			mGroupDefValue += 75;
 			break;
 		case VehicleType::IFV:
-			groupDefValue += 75;
+			mGroupDefValue += 75;
 			break;
 		case VehicleType::TANK:
-			groupDefValue += 65;
+			mGroupDefValue += 65;
 			break;
 		}
 	}
@@ -133,7 +133,7 @@ void MyUnitGroup::buildMoveMap()
 		{
 			xypoint nxt = { t.first + dx[k], t.second + dy[k] };
 			if (pointIsInBounds(nxt, width, height)
-				&& (air ? mGlobaler.getCellDangerAir(nxt.first, nxt.second) : mGlobaler.getCellDangerLand(nxt.first, nxt.second)) <= groupDefValue)
+				&& (air ? mGlobaler.getCellDangerAir(nxt.first, nxt.second) : mGlobaler.getCellDangerLand(nxt.first, nxt.second)) <= mGroupDefValue)
 			{
 				if (mMoveParent[nxt.first][nxt.second].first != -1)
 					continue;
@@ -236,6 +236,11 @@ void MyUnitGroup::setGroupAngle(double angle)
 void MyUnitGroup::setVehicleType(VehicleType type)
 {
 	mVehicleType = type;
+}
+
+double MyUnitGroup::getDef() const
+{
+	return mGroupDefValue;
 }
 
 pair<xypoint, xypoint> MyUnitGroup::getGridedAabb() const
