@@ -81,7 +81,7 @@ void MyGlobalInfoStorer::setMyId(int id)
 	mMyId = id;
 }
 
-void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
+void MyGlobalInfoStorer::buildMaps(const vector<shared_ptr<MyUnitGroup>>& groups, bool nukeComp)
 {
 	for (auto& y : mCellOccupLand)
 		for (auto& x : y)
@@ -171,15 +171,18 @@ void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
 					break;
 				}
 			}
-			for (auto& u : getOurVehicles())
+			if (nukeComp)
 			{
-				double dist = sqrt(sq(x * 16 - u.second.mX) + sq(y * 16 - u.second.mY));
-				if (dist <= 50)
+				for (auto& u : getOurVehicles())
 				{
-					nukeScore -= (99 - 99 * (dist / 50)) * 0.7;
+					double dist = sqrt(sq(x * 16 - u.second.mX) + sq(y * 16 - u.second.mY));
+					if (dist <= 50)
+					{
+						nukeScore -= (99 - 99 * (dist / 50)) * 0.7;
+					}
 				}
+				mNukeValue[x][y] = nukeScore;
 			}
-			mNukeValue[x][y] = nukeScore;
 		}
 
 	for (auto& q : groups)

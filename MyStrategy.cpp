@@ -700,9 +700,11 @@ void MyStrategy::move(const Player& me, const World& world, const Game& game, Mo
 
 	if (world.getTickIndex() % 5 == 0)
 	{
-		mGlobaler.buildMaps(mGroupActors);
+		bool nukeReady = mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex();
 
-		if (mLastNuke + me.getRemainingNuclearStrikeCooldownTicks() < world.getTickIndex() && nukeEmAll(me, world, move))
+		mGlobaler.buildMaps(mGroupActors, nukeReady);
+
+		if (nukeReady && nukeEmAll(me, world, move))
 			return;
 
 		auto newf = mGlobaler.getNewFacility();

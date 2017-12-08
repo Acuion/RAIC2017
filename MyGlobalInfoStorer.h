@@ -38,7 +38,7 @@ public:
 	void processNews(const vector<Vehicle>& startVehicleInfo, int myPlayerId);
 	void updateFacilities(const vector<Facility>& fs, int currentTick);
 	void setMyId(int id);
-	void buildMaps(vector<shared_ptr<MyUnitGroup>> groups);
+	void buildMaps(const vector<shared_ptr<MyUnitGroup>>& groups, bool nukeComp);
 
 	double getNukeValueAtCell(int x, int y) const;
 	int getCellOccupLand(int x, int y) const;
