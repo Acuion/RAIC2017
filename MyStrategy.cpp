@@ -918,25 +918,39 @@ MyStrategy::MyStrategy()
 				}
 			}
 
-			xypoint gotop = { en.first + cos(angle) * dist, en.second + sin(angle) * dist };
-
-			bool badgotop = false;
-			if (gotop.first < 0 || gotop.second < 0 || gotop.first >= 1024 || gotop.second >= 1024)
+			bool finallymvd = false;
+			for (int k = 0, l = 0, r = 0; k <= 16; ++k)
 			{
-				badgotop = true;
-			}
-
-			if (!badgotop)
-			{
-				if (!thisGroup.smartMoveTo(gotop, move, world))
+				double gangle = angle;
+				if (k % 2)
 				{
-					thisGroup.move({ gotop.first - theCenter.first, gotop.second - theCenter.second }, true, move, world);
+					angle += (PI / 8) * l;
+					++l;
+				}
+				else
+				{
+					angle -= (PI / 8) * r;
+					++r;
+				}
+				xypoint gotop = { en.first + cos(angle) * dist, en.second + sin(angle) * dist };
+				bool badgotop = false;
+				if (gotop.first < 32 || gotop.second < 32 || gotop.first >= 1024 - 32 || gotop.second >= 1024 - 32)
+				{
+					badgotop = true;
+				}
+
+				if (!badgotop)
+				{
+					if (!thisGroup.smartMoveTo(gotop, move, world))
+					{
+						thisGroup.move({ gotop.first - theCenter.first, gotop.second - theCenter.second }, true, move, world);
+					}
+					finallymvd = true;
+					break;
 				}
 			}
-			else
-			{
+			if (!finallymvd)
 				thisGroup.move({ rand() % 10, rand() % 10 }, true, move, world);
-			}
 		};
 
 		if (thisGroup.getVehicleType() != VehicleType::HELICOPTER && thisGroup.getVehicleType() != VehicleType::FIGHTER)

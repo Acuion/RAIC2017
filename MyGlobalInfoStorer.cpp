@@ -195,7 +195,7 @@ void MyGlobalInfoStorer::buildMaps(vector<shared_ptr<MyUnitGroup>> groups)
 			aabb.second.first += mv.first * 2;
 			aabb.second.second += mv.second * 2;
 
-			if (q->getVehicleType() == VehicleType::FIGHTER)
+			if (q->getVehicleType() == VehicleType::FIGHTER || q->getVehicleType() == VehicleType::HELICOPTER)
 			{
 				aabb.first.first--;
 				aabb.first.second--;
