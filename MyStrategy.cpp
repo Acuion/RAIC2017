@@ -899,7 +899,7 @@ MyStrategy::MyStrategy()
 		{
 			auto en = thisGroup.getClosestEnemy();
 			double angle = atan2(theCenter.second - en.second, theCenter.first - en.first);
-			double dist = 80;
+			double dist = 70;
 			if (thisGroup.getVehicleType() == VehicleType::FIGHTER)
 				dist = 110;
 
@@ -924,15 +924,15 @@ MyStrategy::MyStrategy()
 				double gangle = angle;
 				if (k % 2)
 				{
-					angle += (PI / 8) * l;
+					gangle += (PI / 8) * l;
 					++l;
 				}
 				else
 				{
-					angle -= (PI / 8) * r;
+					gangle -= (PI / 8) * r;
 					++r;
 				}
-				xypoint gotop = { en.first + cos(angle) * dist, en.second + sin(angle) * dist };
+				xypoint gotop = { en.first + cos(gangle) * dist, en.second + sin(gangle) * dist };
 				bool badgotop = false;
 				if (gotop.first < 32 || gotop.second < 32 || gotop.first >= 1024 - 32 || gotop.second >= 1024 - 32)
 				{
@@ -941,12 +941,41 @@ MyStrategy::MyStrategy()
 
 				if (!badgotop)
 				{
-					if (!thisGroup.smartMoveTo(gotop, move, world))
+					if (thisGroup.smartMoveTo(gotop, move, world))
+					{
+						finallymvd = true;
+						break;
+					}
+				}
+			}
+			if (!finallymvd)
+			{			
+				for (int k = 0, l = 0, r = 0; k <= 16; ++k)
+				{
+					double gangle = angle;
+					if (k % 2)
+					{
+						gangle += (PI / 8) * l;
+						++l;
+					}
+					else
+					{
+						gangle -= (PI / 8) * r;
+						++r;
+					}
+					xypoint gotop = { en.first + cos(gangle) * dist, en.second + sin(gangle) * dist };
+					bool badgotop = false;
+					if (gotop.first < 32 || gotop.second < 32 || gotop.first >= 1024 - 32 || gotop.second >= 1024 - 32)
+					{
+						badgotop = true;
+					}
+
+					if (!badgotop)
 					{
 						thisGroup.move({ gotop.first - theCenter.first, gotop.second - theCenter.second }, true, move, world);
+						finallymvd = true;
+						break;
 					}
-					finallymvd = true;
-					break;
 				}
 			}
 			if (!finallymvd)
